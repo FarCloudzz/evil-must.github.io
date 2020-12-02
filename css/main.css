@@ -1923,7 +1923,7 @@ img:hover {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #1dff74;
+  background: #4fffff;
 }
 .links-of-blogroll {
   font-size: 13px;
@@ -3230,7 +3230,7 @@ li.recent_posts_li {
   }
 }
 body {
-  background: url("/images/background.jpg") no-repeat;
+  background: url("https://pic.downk.cc/item/5fc76c3e394ac52378aa3c20.jpg") no-repeat;
 /* 背景图垂直、水平均居中 */
   background-position: center center;
 /* 当内容高度大于图片高度时，背景图像的位置相对于viewport固定 */
@@ -3267,7 +3267,7 @@ pre {
   display: none;
 }
 .sidebar {
-  background: url("/images/background.jpg");
+  background: url("https://pic.downk.cc/item/5fc76c3e394ac52378aa3c20.jpg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
