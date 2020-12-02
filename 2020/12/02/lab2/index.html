@@ -90,7 +90,7 @@
 <meta property="og:locale">
 <meta property="og:image" content="c:/Users/dier/Pictures/QQ截图20200715191038.png">
 <meta property="article:published_time" content="2020-12-02T03:27:12.000Z">
-<meta property="article:modified_time" content="2020-12-02T03:31:09.311Z">
+<meta property="article:modified_time" content="2020-12-02T03:36:07.488Z">
 <meta property="article:author" content="noor">
 <meta property="article:tag" content="code, game">
 <meta name="twitter:card" content="summary">
@@ -408,6 +408,8 @@
         <h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>为操作系统编写内存管理代码。内存管理包含两个组件。</p>
 <p>第一个组件是内核的 <em>物理内存分配器</em>，以便内核可以分配和释放内存。分配器以 4096 字节为单位操作，称为 <em>pages</em>。任务是维护数据结构，该数据结构记录哪些物理页是空闲的，哪些已分配的，以及有多少个进程共享每个分配的页。还将编写例程来分配和释放内存页面。</p>
 <p>内存管理的第二个组件是 <em>虚拟内存</em>，它将内核和用户软件使用的虚拟地址映射到物理内存中的地址。当指令使用内存时，x86 硬件的内存管理单元（MMU）执行映射。根据提供的规范修改 JOS 以设置 MMU 的页表。</p>
+<a id="more"></a>
+
 <h2 id="Part-1：Physical-Page-Management"><a href="#Part-1：Physical-Page-Management" class="headerlink" title="Part 1：Physical Page Management"></a>Part 1：Physical Page Management</h2><p>操作系统必须跟踪物理 RAM 的使用情况。JOS 以页为粒度管理 PC 的物理内存，这样它就可以使用 MMU 来映射和保护分配的每一块内存。</p>
 <p>编写一个物理页分配器。它通过 struct PageInfo 对象的链接列表来跟踪那些页面是空闲的，每个对象对应一个物理页面。</p>
 <p>在编写剩余的虚拟内存实现之前，需要先编写物理页分配器，因为页表管理代码将需要分配用于存储页表的物理内存。</p>
