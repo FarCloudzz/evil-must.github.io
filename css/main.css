@@ -1910,7 +1910,7 @@ pre .javascript .function {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #fb45ff;
+  background: #4a329e;
 }
 .links-of-blogroll {
   font-size: 13px;
@@ -3266,7 +3266,7 @@ pre {
   opacity: 0.9;
 }
 .sidebar {
-  background: url("https://imgchr.com/i/DIm5V0");
+  background: url("/images/background.jpg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
