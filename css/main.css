@@ -1923,7 +1923,7 @@ img:hover {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #b475b9;
+  background: #d0a75e;
 }
 .links-of-blogroll {
   font-size: 13px;
@@ -3292,5 +3292,5 @@ pre {
 .sidebar p,
 .sidebar span,
 .sidebar a {
-  color: #fff;
+  color: rgba(200,200,169,0.8);
 }
