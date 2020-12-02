@@ -2,7 +2,7 @@
 <search>
   <entry>
     <title>序章</title>
-    <url>/home/2020/12/01/hello-world/</url>
+    <url>/2020/12/01/hello-world/</url>
     <content><![CDATA[<p>做一个记录吧，对我的余生。</p>
 <a id="more"></a>
 
@@ -11,7 +11,7 @@
   </entry>
   <entry>
     <title>Lab 2：内存管理</title>
-    <url>/home/2020/12/02/lab2/</url>
+    <url>/2020/12/02/lab2/</url>
     <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>为操作系统编写内存管理代码。内存管理包含两个组件。</p>
 <p>第一个组件是内核的 <em>物理内存分配器</em>，以便内核可以分配和释放内存。分配器以 4096 字节为单位操作，称为 <em>pages</em>。任务是维护数据结构，该数据结构记录哪些物理页是空闲的，哪些已分配的，以及有多少个进程共享每个分配的页。还将编写例程来分配和释放内存页面。</p>
 <p>内存管理的第二个组件是 <em>虚拟内存</em>，它将内核和用户软件使用的虚拟地址映射到物理内存中的地址。当指令使用内存时，x86 硬件的内存管理单元（MMU）执行映射。根据提供的规范修改 JOS 以设置 MMU 的页表。</p>
@@ -172,7 +172,7 @@
   </entry>
   <entry>
     <title>Lab 5: 文件系统</title>
-    <url>/home/2020/12/02/lab5/</url>
+    <url>/2020/12/02/lab5/</url>
     <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>在这个实验中，您将实现 spawn，一个加载并在磁盘可执行文件上运行的库调用。然后，您将充实您的内核和库操作系统，足以在控制台上运行 shell。这些特性需要一个文件系统，本实验室介绍了一个简单的 读/写 文件系统。</p>
 <h1 id="File-system-preliminaries"><a href="#File-system-preliminaries" class="headerlink" title="File system preliminaries"></a>File system preliminaries</h1><p>您将使用的文件系统比大多数 “真实” 的文件系统（包括 xv6 unix）简单得多，但它的功能足以提供基本功能：创建、读取、写入和删除以分层目录结构组织的文件。</p>
 <p>我们目前（无论如何）只开发一个单用户操作系统，它提供足够的保护来捕捉错误，但不能保护多个相互怀疑的用户。因此，我们的文件系统不支持 UNIX 文件所有权或权限的概念。我们的文件系统目前也不支持硬链接、符号链接、时间戳或像大多数 UNIX 文件系统那样的特殊设备文件。</p>
@@ -283,7 +283,7 @@
   </entry>
   <entry>
     <title>Lab 3：用户环境</title>
-    <url>/home/2020/12/02/lab3/</url>
+    <url>/2020/12/02/lab3/</url>
     <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>在此 lab 中，您将实现运行受保护的用户模式环境（即”进程”）所需的基本内核功能。您将增强 JOS 内核以设置数据结构来跟踪用户环境、创建单个用户环境、将程序映像加载到其中，并启动运行。您还将使 JOS 内核能够处理用户环境进行的任何系统调用并处理它导致的任何其他异常。</p>
 <p><strong>Note：</strong>在此实验中，术语 <em>environment</em> 和 <em>process</em> 是可互换的 - 两者都指允许您运行程序的抽象。我们引入术语 “<em>environment</em>“ 而不是传统术语 “<em>process</em>“，以强调 JOS 环境和 UNIX 进程提供不同接口，并且不提供相同的语义。</p>
 <a id="more"></a>
@@ -506,7 +506,7 @@
   </entry>
   <entry>
     <title>Lab 6: 网络驱动</title>
-    <url>/home/2020/12/02/lab6/</url>
+    <url>/2020/12/02/lab6/</url>
     <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>本 Lab 是你可以自己进行的最后一个项目。</p>
 <p>现在你有了一个文件系统，任何一个有自尊的操作系统都不应该没有网络堆栈。在这个 Lab 中，你要写一个网络接口卡的驱动程序。该卡将基于 Intel 82540EM 芯片，也称为 E1000。</p>
 <p>然而，网卡驱动程序不足以让你的操作系统连接到互联网上。在新的 lab 6 代码中，我们为您提供了一个网络堆栈和一个网络服务器。与以前的实验一样，使用 git 获取这个实验的代码，合并到您自己的代码中，并研究新 net/ 目录中的内容，以及 kern/ 中的新文件。</p>
@@ -672,7 +672,7 @@
   </entry>
   <entry>
     <title>Lab 4: 抢占式多任务调度</title>
-    <url>/home/2020/12/02/lab4/</url>
+    <url>/2020/12/02/lab4/</url>
     <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>在此 Lab 中，您将在多个同时处于活动状态的用户模式环境中实现抢占式多任务处理。</p>
 <p>在 A 部分中，您将向 JOS 添加多处理器支持，实现循环调度，并添加基本环境管理系统调用（创建和销毁环境的调用，以及分配/映射内存）。</p>
 <p>在 B 部分中，您将实现一个像 Unix 一样 fork()，它允许用户模式环境创建自己的副本。</p>
