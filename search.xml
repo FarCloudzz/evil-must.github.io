@@ -277,6 +277,9 @@
 </ul>
 <p>but feel free to do something not on this list.</p>
 ]]></content>
+      <categories>
+        <category>操作系统</category>
+      </categories>
   </entry>
   <entry>
     <title>Lab 3：用户环境</title>
@@ -497,6 +500,9 @@
 <figure class="highlight c"><table><tr><td class="code"><pre><span class="line">[<span class="number">00000000</span>] <span class="keyword">new</span> env <span class="number">00001000</span></span><br><span class="line">	...</span><br><span class="line">[<span class="number">00001000</span>] user_mem_check assertion failure <span class="keyword">for</span> va </span><br><span class="line">											f010000c</span><br><span class="line">[<span class="number">00001000</span>] <span class="built_in">free</span> env <span class="number">00001000</span></span><br></pre></td></tr></table></figure>
 
 ]]></content>
+      <categories>
+        <category>操作系统</category>
+      </categories>
   </entry>
   <entry>
     <title>Lab 6: 网络驱动</title>
@@ -660,6 +666,9 @@
 <h4 id="Question-2"><a href="#Question-2" class="headerlink" title="Question"></a>Question</h4><p>JOS的web服务器提供的web页面说明了什么？</p>
 <p>你做这个实验大概花了多长时间？</p>
 ]]></content>
+      <categories>
+        <category>操作系统</category>
+      </categories>
   </entry>
   <entry>
     <title>Lab 4: 抢占式多任务调度</title>
@@ -909,5 +918,8 @@
 <h4 id="Challenge-9"><a href="#Challenge-9" class="headerlink" title="Challenge!"></a>Challenge!</h4><p>One of the most impressive examples of the power of message passing is Doug McIlroy’s power series calculator, described in <a href="https://swtch.com/~rsc/thread/squint.pdf">M. Douglas McIlroy, ``Squinting at Power Series,’’ <em>Software–Practice and Experience</em>, 20(7) (July 1990), 661-683</a>. Implement his power series calculator and compute the power series for <em>sin</em>(<em>x</em>+<em>x</em>^3).</p>
 <h4 id="Challenge-10"><a href="#Challenge-10" class="headerlink" title="Challenge!"></a>Challenge!</h4><p>Make JOS’s IPC mechanism more efficient by applying some of the techniques from Liedtke’s paper, <a href="http://dl.acm.org/citation.cfm?id=168633">Improving IPC by Kernel Design</a>, or any other tricks you may think of. Feel free to modify the kernel’s system call API for this purpose, as long as your code is backwards compatible with what our grading scripts expect.</p>
 ]]></content>
+      <categories>
+        <category>操作系统</category>
+      </categories>
   </entry>
 </search>

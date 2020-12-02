@@ -6,7 +6,7 @@
   <link href="http://evil-must.github.io/atom.xml" rel="self"/>
   
   <link href="http://evil-must.github.io/"/>
-  <updated>2020-12-02T05:33:10.897Z</updated>
+  <updated>2020-12-02T06:05:56.695Z</updated>
   <id>http://evil-must.github.io/</id>
   
   <author>
@@ -21,7 +21,7 @@
     <link href="http://evil-must.github.io/2020/12/02/lab6/"/>
     <id>http://evil-must.github.io/2020/12/02/lab6/</id>
     <published>2020-12-02T03:40:12.000Z</published>
-    <updated>2020-12-02T05:33:10.897Z</updated>
+    <updated>2020-12-02T06:05:56.695Z</updated>
     
     
     <summary type="html">&lt;h2 id=&quot;Introduction&quot;&gt;&lt;a href=&quot;#Introduction&quot; class=&quot;headerlink&quot; title=&quot;Introduction&quot;&gt;&lt;/a&gt;Introduction&lt;/h2&gt;&lt;p&gt;本 Lab 是你可以自己进行的最后一个项目。&lt;/p&gt;
@@ -31,6 +31,8 @@
     
     
     
+    <category term="操作系统" scheme="http://evil-must.github.io/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"/>
+    
     
   </entry>
   
@@ -39,7 +41,7 @@
     <link href="http://evil-must.github.io/2020/12/02/lab5/"/>
     <id>http://evil-must.github.io/2020/12/02/lab5/</id>
     <published>2020-12-02T03:39:12.000Z</published>
-    <updated>2020-12-02T05:32:59.130Z</updated>
+    <updated>2020-12-02T06:05:48.851Z</updated>
     
     
     <summary type="html">&lt;h2 id=&quot;Introduction&quot;&gt;&lt;a href=&quot;#Introduction&quot; class=&quot;headerlink&quot; title=&quot;Introduction&quot;&gt;&lt;/a&gt;Introduction&lt;/h2&gt;&lt;p&gt;在这个实验中，您将实现 spawn，一个加载并在磁盘可执行文件上运行的库调用。然后，您将充实您的内核和库操作系统，足以在控制台上运行 shell。这些特性需要一个文件系统，本实验室介绍了一个简单的 读/写 文件系统。&lt;/p&gt;
@@ -47,6 +49,8 @@
 &lt;p&gt;我们目前（无论如何）只开发一个单用户操作系统，它提供足够的保护来捕捉错误，但不能保护多个相互怀疑的用户。因此，我们的文件系统不支持 UNIX 文件所有权或权限的概念。我们的文件系统目前也不支持硬链接、符号链接、时间戳或像大多数 UNIX 文件系统那样的特殊设备文件。&lt;/p&gt;</summary>
     
     
+    
+    <category term="操作系统" scheme="http://evil-must.github.io/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"/>
     
     
   </entry>
@@ -56,7 +60,7 @@
     <link href="http://evil-must.github.io/2020/12/02/lab4/"/>
     <id>http://evil-must.github.io/2020/12/02/lab4/</id>
     <published>2020-12-02T03:38:12.000Z</published>
-    <updated>2020-12-02T05:32:51.139Z</updated>
+    <updated>2020-12-02T06:05:41.087Z</updated>
     
     
     <summary type="html">&lt;h2 id=&quot;Introduction&quot;&gt;&lt;a href=&quot;#Introduction&quot; class=&quot;headerlink&quot; title=&quot;Introduction&quot;&gt;&lt;/a&gt;Introduction&lt;/h2&gt;&lt;p&gt;在此 Lab 中，您将在多个同时处于活动状态的用户模式环境中实现抢占式多任务处理。&lt;/p&gt;
@@ -66,6 +70,8 @@
     
     
     
+    <category term="操作系统" scheme="http://evil-must.github.io/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"/>
+    
     
   </entry>
   
@@ -74,13 +80,15 @@
     <link href="http://evil-must.github.io/2020/12/02/lab3/"/>
     <id>http://evil-must.github.io/2020/12/02/lab3/</id>
     <published>2020-12-02T03:37:12.000Z</published>
-    <updated>2020-12-02T05:32:40.371Z</updated>
+    <updated>2020-12-02T06:05:33.534Z</updated>
     
     
     <summary type="html">&lt;h2 id=&quot;Introduction&quot;&gt;&lt;a href=&quot;#Introduction&quot; class=&quot;headerlink&quot; title=&quot;Introduction&quot;&gt;&lt;/a&gt;Introduction&lt;/h2&gt;&lt;p&gt;在此 lab 中，您将实现运行受保护的用户模式环境（即”进程”）所需的基本内核功能。您将增强 JOS 内核以设置数据结构来跟踪用户环境、创建单个用户环境、将程序映像加载到其中，并启动运行。您还将使 JOS 内核能够处理用户环境进行的任何系统调用并处理它导致的任何其他异常。&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;Note：&lt;/strong&gt;在此实验中，术语 &lt;em&gt;environment&lt;/em&gt; 和 &lt;em&gt;process&lt;/em&gt; 是可互换的 - 两者都指允许您运行程序的抽象。我们引入术语 “&lt;em&gt;environment&lt;/em&gt;“ 而不是传统术语 “&lt;em&gt;process&lt;/em&gt;“，以强调 JOS 环境和 UNIX 进程提供不同接口，并且不提供相同的语义。&lt;/p&gt;</summary>
     
     
+    
+    <category term="操作系统" scheme="http://evil-must.github.io/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"/>
     
     
   </entry>
