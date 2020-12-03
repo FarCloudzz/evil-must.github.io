@@ -160,7 +160,7 @@
 ]]></content>
   </entry>
   <entry>
-    <title>6.828 Lab2 ：Raft</title>
+    <title>6.824 Lab2 ：Raft</title>
     <url>/2020/12/03/6.824-lab2/</url>
     <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>这是您将构建的一个容错 键/值 存储系统的一系列实验中的第一个。在这个实验室中，您将实现 Raft，一个复制的状态机协议。在下一个实验中，您将在 Raft 的顶部构建一个 key/value 服务。然后，您将在多个复制状态机上“切分”服务，以获得更高的性能。</p>
 <a id="more"></a>
