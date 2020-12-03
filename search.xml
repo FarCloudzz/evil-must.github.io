@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title></title>
+    <title>6.824 Lab 1：MapReduce</title>
     <url>/2020/12/03/6.824-lab1/</url>
     <content><![CDATA[<h2 id="Getting-started"><a href="#Getting-started" class="headerlink" title="Getting started"></a>Getting started</h2><p><code>/src/main/mrsequential.go</code> 是一个简单的顺序 mapreduce 实现。它在一个进程中一次运行一个 map 和 reduce。我们也为你提供了一对 MapReduce 应用：<code>mrapps/wc.go</code> 中的单词计数和 <code> mrapps/indexer.go</code>  中的文本索引器。可以按如下顺序运行字数统计：</p>
 <a id="more"></a>
@@ -94,7 +94,7 @@
       </tags>
   </entry>
   <entry>
-    <title></title>
+    <title>6.824 Lab 3 : Fault-tolerant Key/Value Service</title>
     <url>/2020/12/03/6.824-lab3/</url>
     <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>在此 Lab 中，您将使用 Lab 2 的 Raft 库构建 容错 K/V 存储服务。您的 K/V 服务将是复制的状态机，由使用 Raft 进行复制的多个 K/V 服务器组成。您的 K/V 服务应继续处理客户端请求，只要大多数服务器处于活动状态，并且可以进行通信，尽管有其他故障或网络分区。</p>
 <a id="more"></a>
@@ -160,7 +160,7 @@
 ]]></content>
   </entry>
   <entry>
-    <title></title>
+    <title>6.828 Lab2 ：Raft</title>
     <url>/2020/12/03/6.824-lab2/</url>
     <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>这是您将构建的一个容错 键/值 存储系统的一系列实验中的第一个。在这个实验室中，您将实现 Raft，一个复制的状态机协议。在下一个实验中，您将在 Raft 的顶部构建一个 key/value 服务。然后，您将在多个复制状态机上“切分”服务，以获得更高的性能。</p>
 <a id="more"></a>
@@ -252,7 +252,7 @@
       </tags>
   </entry>
   <entry>
-    <title></title>
+    <title>6.824 Lab 4：Sharded Key/Value Service</title>
     <url>/2020/12/03/6.824-lab4/</url>
     <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>在本 Lab 中，您将构建一个 K/V 存储系统，它将 key “shards” 或分区到一组副本上。shard 是 K/V 对的子集；例如，所有以 “a” 开头的键可能是一个 shard，所有以 “b” 开头的键可能是另一个 shard，等等。切分的原因是性能。每个副本组只处理几个 shard 的 put 和 get，并且这些组并行操作；因此，总的系统吞吐量（单位时间的投入和获得）与组的数量成比例地增加。</p>
 <a id="more"></a>
@@ -334,7 +334,7 @@
       </tags>
   </entry>
   <entry>
-    <title>Lab 2：内存管理</title>
+    <title>6.828 Lab 2：内存管理</title>
     <url>/2020/12/02/6.828-lab2/</url>
     <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>为操作系统编写内存管理代码。内存管理包含两个组件。</p>
 <p>第一个组件是内核的 <em>物理内存分配器</em>，以便内核可以分配和释放内存。分配器以 4096 字节为单位操作，称为 <em>pages</em>。任务是维护数据结构，该数据结构记录哪些物理页是空闲的，哪些已分配的，以及有多少个进程共享每个分配的页。还将编写例程来分配和释放内存页面。</p>
@@ -498,7 +498,7 @@
       </tags>
   </entry>
   <entry>
-    <title>Lab 5: 文件系统</title>
+    <title>6.828 Lab 5: 文件系统</title>
     <url>/2020/12/02/6.828-lab5/</url>
     <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>在这个实验中，您将实现 spawn，一个加载并在磁盘可执行文件上运行的库调用。然后，您将充实您的内核和库操作系统，足以在控制台上运行 shell。这些特性需要一个文件系统，本实验室介绍了一个简单的 读/写 文件系统。</p>
 <h1 id="File-system-preliminaries"><a href="#File-system-preliminaries" class="headerlink" title="File system preliminaries"></a>File system preliminaries</h1><p>您将使用的文件系统比大多数 “真实” 的文件系统（包括 xv6 unix）简单得多，但它的功能足以提供基本功能：创建、读取、写入和删除以分层目录结构组织的文件。</p>
@@ -612,7 +612,7 @@
       </tags>
   </entry>
   <entry>
-    <title>Lab 3：用户环境</title>
+    <title>6.828 Lab 3：用户环境</title>
     <url>/2020/12/02/6.828-lab3/</url>
     <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>在此 lab 中，您将实现运行受保护的用户模式环境（即”进程”）所需的基本内核功能。您将增强 JOS 内核以设置数据结构来跟踪用户环境、创建单个用户环境、将程序映像加载到其中，并启动运行。您还将使 JOS 内核能够处理用户环境进行的任何系统调用并处理它导致的任何其他异常。</p>
 <p><strong>Note：</strong>在此实验中，术语 <em>environment</em> 和 <em>process</em> 是可互换的 - 两者都指允许您运行程序的抽象。我们引入术语 “<em>environment</em>“ 而不是传统术语 “<em>process</em>“，以强调 JOS 环境和 UNIX 进程提供不同接口，并且不提供相同的语义。</p>
@@ -838,7 +838,7 @@
       </tags>
   </entry>
   <entry>
-    <title>Lab 6: 网络驱动</title>
+    <title>6.828 Lab 6: 网络驱动</title>
     <url>/2020/12/02/6.828-lab6/</url>
     <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>本 Lab 是你可以自己进行的最后一个项目。</p>
 <p>现在你有了一个文件系统，任何一个有自尊的操作系统都不应该没有网络堆栈。在这个 Lab 中，你要写一个网络接口卡的驱动程序。该卡将基于 Intel 82540EM 芯片，也称为 E1000。</p>
@@ -1007,7 +1007,7 @@
       </tags>
   </entry>
   <entry>
-    <title>Lab 4: 抢占式多任务调度</title>
+    <title>6.828 Lab 4: 抢占式多任务调度</title>
     <url>/2020/12/02/6.828-lab4/</url>
     <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>在此 Lab 中，您将在多个同时处于活动状态的用户模式环境中实现抢占式多任务处理。</p>
 <p>在 A 部分中，您将向 JOS 添加多处理器支持，实现循环调度，并添加基本环境管理系统调用（创建和销毁环境的调用，以及分配/映射内存）。</p>
