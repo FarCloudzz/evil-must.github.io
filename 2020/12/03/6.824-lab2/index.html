@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+  
+  
+    
+    
+  <script src="/lib/pace/pace.min.js?v=1.0.2"></script>
+  <link href="/lib/pace/pace-theme-minimal.min.css?v=1.0.2" rel="stylesheet">
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="MIT 6.824," />
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="明日边缘" type="application/atom+xml" />
+
+
+
+
+
+
+<meta name="description" content="Introduction这是您将构建的一个容错 键&#x2F;值 存储系统的一系列实验中的第一个。在这个实验室中，您将实现 Raft，一个复制的状态机协议。在下一个实验中，您将在 Raft 的顶部构建一个 key&#x2F;value 服务。然后，您将在多个复制状态机上“切分”服务，以获得更高的性能。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="明日边缘">
+<meta property="og:url" content="http://evil-must.github.io/2020/12/03/6.824-lab2/index.html">
+<meta property="og:site_name" content="明日边缘">
+<meta property="og:description" content="Introduction这是您将构建的一个容错 键&#x2F;值 存储系统的一系列实验中的第一个。在这个实验室中，您将实现 Raft，一个复制的状态机协议。在下一个实验中，您将在 Raft 的顶部构建一个 key&#x2F;value 服务。然后，您将在多个复制状态机上“切分”服务，以获得更高的性能。">
+<meta property="og:locale">
+<meta property="article:published_time" content="2020-12-03T02:14:12.000Z">
+<meta property="article:modified_time" content="2020-12-03T02:30:31.767Z">
+<meta property="article:author" content="别云">
+<meta property="article:tag" content="MIT 6.824">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":true,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://evil-must.github.io/2020/12/03/6.824-lab2/"/>
+
+
+
+
+
+  <title> | 明日边缘</title>
+  
+
+
+
+
+
+  <script type="text/javascript">
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?6ed4c7d747139160a38d3f510c1cf801";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+<meta name="generator" content="Hexo 5.1.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">明日边缘</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">唯有生命中的黄金岁月一去就不再来</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/home/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-留言板">
+          <a href="/contact/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-question-circle"></i> <br />
+            
+            留言板
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br />
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off"
+             placeholder="搜索..." spellcheck="false"
+             type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://evil-must.github.io/2020/12/03/6.824-lab2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/uploads/avatar.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="明日边缘">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline"></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-12-03T10:14:12+08:00">
+                2020-12-03
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/" itemprop="url" rel="index">
+                    <span itemprop="name">分布式</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2020/12/03/6.824-lab2/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2020/12/03/6.824-lab2/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-wordcount">
+              
+                
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">字数统计&#58;</span>
+                
+                <span title="字数统计">
+                  3.9k
+                </span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">阅读时长 &asymp;</span>
+                
+                <span title="阅读时长">
+                  14
+                </span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>这是您将构建的一个容错 键/值 存储系统的一系列实验中的第一个。在这个实验室中，您将实现 Raft，一个复制的状态机协议。在下一个实验中，您将在 Raft 的顶部构建一个 key/value 服务。然后，您将在多个复制状态机上“切分”服务，以获得更高的性能。</p>
+<a id="more"></a>
+<p>复制服务通过在多个副本服务器上存储其状态（即数据）的完整副本来实现容错。复制允许服务继续运行，即使它的一些服务器出现故障（崩溃或网络损坏或不稳定）。问题是，故障可能会导致副本保存不同的数据状态更高性能的机器。</p>
+<p>Raft 将客户机请求组织成一个称为日志的序列，并确保所有副本服务器看到相同的日志。每个副本按日志顺序执行客户机请求，并将其应用于服务状态的本地副本。因为所有的实时副本都看到相同的日志内容，所以它们都以相同的顺序执行相同的请求，因此继续具有相同的服务状态。如果服务器出现故障但后来恢复，Raft 会负责更新日志。只要这些服务器中至少有大多数还活着，并且能够相互通信，Raft 就将继续运行。如果没有这样的多数，Raft 将不会取得任何进展，但一旦多数人能够再次沟通，它就会从中断的地方重新开始。</p>
+<p>在这个 Lab 中，您将实现 Raft 作为一个带有关联方法的 Go 对象类型，这意味着在一个更大的服务中用作一个模块。一组 Raft 实例通过 RPC 相互通信来维护复制的日志。Raft 接口将支持不确定的编号命令序列，也称为日志条目。条目用索引号编号。最终将提交具有给定索引的日志条目。此时，您的 Raft 应该将日志条目发送到更大的服务以供其执行。</p>
+<p>您应该按照 <a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf">extended Raft paper</a> 中的设计，特别注意图2。您将实现本文中的大部分内容，包括保存持久状态并在节点发生故障后读取它，然后重新启动。您不会实现集群成员身份更改（第 6 节）。您将在稍后的 Lab 中实现日志压缩/快照（第 7 节）。</p>
+<p>您可能会发现本 <a target="_blank" rel="noopener" href="https://thesquareplanet.com/blog/students-guide-to-raft/">guide</a>  以及关于 <a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/labs/raft-locking.txt">locking</a> 和 <a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/labs/raft-structure.txt">structure</a>  的建议非常有用。从更广泛的角度来看，可以看看 Paxos，Chubby，Paxos Make Live，Spanner，Zookeeper，Harp，Viewstamped Replication，以及 Bolosky 等。</p>
+<p>这个 Lab 分三部分完成。</p>
+<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><p>如果你已经完成了 Lab 1，你已经有了一份 Lab 源代码的副本。</p>
+<p>我们为您提供骨架代码  <code>src/raft/raft.go</code>。 我们还提供了一组测试，您应该使用这些测试来推动您的实现工作，我们将使用这些测试对您提交的 Lab 进行评分。这些测试在 <code>src/raft/test_test.go</code> 中。</p>
+<p>要启动并运行，请执行以下命令。别忘了获取最新软件 <code>git pull</code>。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ cd ~&#x2F;6.824</span><br><span class="line">$ git pull</span><br><span class="line">...</span><br><span class="line">$ cd src&#x2F;raft</span><br><span class="line">$ go test</span><br><span class="line">Test (2A): initial election ...</span><br><span class="line">--- FAIL: TestInitialElection2A (5.04s)</span><br><span class="line">        config.go:326: expected one leader, got none</span><br><span class="line">Test (2A): election after network failure ...</span><br><span class="line">--- FAIL: TestReElection2A (5.03s)</span><br><span class="line">        config.go:326: expected one leader, got none</span><br><span class="line">...</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
+
+<h2 id="The-code"><a href="#The-code" class="headerlink" title="The code"></a>The code</h2><p>通过向  <code>raft/raft.go</code>添加代码来实现 Raft。在该文件中，您将找到框架代码，以及如何发送和接收RPC的示例。在该文件中，您将找到框架代码，以及如何发送和接收 RPCs 的示例。</p>
+<p>您的实现必须支持以下接口，tester 和（最终）键/值 服务器将使用该接口。更多详细信息，请参见 <code>raft.go</code>。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; create a new Raft server instance:</span><br><span class="line">rf :&#x3D; Make(peers, me, persister, applyCh)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; start agreement on a new log entry:</span><br><span class="line">rf.Start(command interface&#123;&#125;) (index, term, isleader)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; ask a Raft for its current term, and whether it thinks it is leader</span><br><span class="line">rf.GetState() (term, isLeader)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; each time a new entry is committed to the log, each Raft peer</span><br><span class="line">&#x2F;&#x2F; should send an ApplyMsg to the service (or tester).</span><br><span class="line">type ApplyMsg</span><br></pre></td></tr></table></figure>
+
+<p>一个服务调用 <code>Make(peers,me,…)</code> 来创建一个 Raft peer。peers 参数是 Raft 对等方（包括这个）的网络标识符数组，用于 RPC。me 参数是 peers 数组中该对等方的索引。 <code>Start(command)</code> 请求Raft启动处理，将命令附加到复制的日志中。<code>Start()</code> 应该立即返回，而不必等待日志追加完成。该服务期望您的实现为每个新提交的日志条目向 <code>Make()</code> 的 <code>applyCh</code> channel 参数发送一个 <code>ApplyMsg</code>。</p>
+<p><code>raft.go</code> 包含发送 RPC（<code>sendRequestVote（）</code>）和处理传入RPC（<code>RequestVote（）</code>）的示例代码。Raft 对等方应该使用 labrpc Go 包交换RPCs（源代码在 <code>src/labrpc</code> 中）。tester 可以告诉 <code>labrpc</code> 延迟 RPCs，重新排序，并丢弃它们来模拟各种网络故障。虽然您可以临时修改 <code>labrpc</code>，但请确保您的 Raft 与原始 <code>labrpc</code> 一起工作，因为这是我们将用来测试和评分的 Lab。Raft 实例必须只与 RPC 交互；例如，不允许它们使用共享 Go 变量或文件进行通信。</p>
+<p>后续的实验是在这个 Lab 的基础上进行的，所以给自己足够的时间来编写可靠的代码是很重要的。</p>
+<h2 id="Part-2A"><a href="#Part-2A" class="headerlink" title="Part 2A"></a>Part 2A</h2><p>TASK: 实现 Raft 领导人选举和心跳（没有日志项的 <code>AppendEntries</code> RPCs）。</p>
+<p>TASK: 2A 部分的目标是选出一个领导者，如果没有失败，领导者仍然是领导者，如果旧领导者失败或者与旧领导者之间的数据包丢失，则由新的领导者接管。</p>
+<p>Run <code>go test -run 2A</code> to test your 2A code.</p>
+<ul>
+<li>Hint：您不可能轻松地直接运行 Raft 实现；相反，您应该通过 tester 来运行它，即 <code>go test -run 2A</code>。</li>
+<li>Hint：参照论文的图 2。此时，您需要发送和接收 RequestVote RPC、与选举相关的服务器规则以及与领导人选举相关的状态。</li>
+<li>Hint：将图 2 中的领导人选举状态添加到 <code>raft.go</code> 中的 Raft 结构。您还需要定义一个结构来保存关于每个日志条目的信息。</li>
+<li>Hint：填写 <code>RequestVoteArgs</code> 和 <code>RequestVoteReply</code> 结构。修改<code>Make()</code> 以创建一个后台 goroutine，当它有一段时间没有收到另一个对等方的消息时，通过发送 <code>RequestVote RPC</code> 来定期启动领导人选举。这样，同龄人就可以知道谁是领导者，如果已经有领导者，或者自己成为领导者。实现 <code>RequestVote（）</code> RPC处理程序，以便服务器相互投票。</li>
+<li>要实现心跳，请定义一个 <code>AppendEntries</code> RPCs 结构（尽管您可能还不需要所有参数），并让领导定期发送它们。编写一个<code>AppendEntries</code> RPC处理程序方法来重置选举超时，这样当一个服务器已经被选中时，其他服务器就不会作为领导者向前迈进。</li>
+<li>Hint：确保不同同龄人的选举超时不要总是同时发生，否则所有同龄人都只为自己投票，没有人会成为 leader。</li>
+<li>Hint：tester 要求领导者每秒发送心跳 RPCs 的次数不超过 10 次。</li>
+<li>Hint：tester 要求你的 Raft 在旧领导失败后的 5 秒内选出一个新的领导者（如果大多数同龄人仍然可以交流的话）。然而，请记住，在出现分裂投票的情况下，领导人选举可能需要多轮投票（如果数据包丢失或候选人不幸地选择了相同的随机退避时间，则可能会发生这种情况）。你必须选择足够短的选举超时（以及心跳间隔），即使需要多轮选举，也很可能在不到 5 秒的时间内完成选举。</li>
+<li>Hint：论文第 5.2 节提到选举超时在 150 到 300 毫秒之间。只有当领导者发送心跳的频率大大高于每 150 毫秒一次时，这样的范围才有意义。因为tester 把你的心跳限制在每秒 10 次，你必须使用一个比论文 150 到 300 毫秒还要大的选举超时时间，但不要太大，因为这样你可能无法在 5 秒钟内选出一位领导人。</li>
+<li>Hint：你会发现 Go 的  <a target="_blank" rel="noopener" href="https://golang.org/pkg/math/rand/">rand</a>  很有用。</li>
+<li>Hint：您将需要编写定期或在时间延迟后执行操作的代码。最简单的方法是创建一个 goroutine，其中循环调用 <code> time.Sleep()</code>。不要使用 Go 的 <code>time.Timer</code> 和 <code>time.Ticker</code>，他们很难正确使用。</li>
+<li>Hint：阅读这个关于  <a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/labs/raft-locking.txt">locking</a> 和 <a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/labs/raft-structure.txt">structure</a> 的建议。</li>
+<li>Hint：如果您的代码无法通过测试，请再次阅读本论文的图 2；领导选举的完整逻辑分布在图的多个部分。</li>
+<li>Hint：别忘了实现 <code>GetState()</code>。</li>
+<li>Hint：当 tester 永久关闭一个实例时，它会调用你的 Raft’s 的 <code>rf.Kill()</code> 。 你可检查 <code>Kill()</code> 是否被使用 <code>rf.Kill()</code> 调用。您可能希望在所有循环中都这样做，以避免死掉的 Raft 实例打印出令人困惑的消息。</li>
+<li>Hint：调试代码的一个好方法是在对等端发送或接收消息时插入 print 语句，并使用  <code>go test-run 2a &gt; out </code> 将输出收集到一个文件中。然后，通过研究 <code>out</code> 文件中的消息跟踪，您可以确定您的实现偏离了所需的协议。你可能会发现 <code>util.go</code> 中的 <code>Dprintf</code> 在用于在调试不同问题时打开和关闭打印很有用。</li>
+<li>Hint：Go-RPC 只发送名称以大写字母开头的结构字段。子结构还必须具有大写字段名（例如数组中的日志记录字段）。<code>labgob</code> 包将警告您这一点；不要忽略这些警告。</li>
+<li>Hint：用 <code>go test -race</code> 检查您的代码，并修复它报告的任何竞争。</li>
+</ul>
+<p>在提交第 2A 部分之前，请确保您通过了 2 A测试，以便您看到如下内容：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="keyword">go</span> test -run <span class="number">2</span>A</span><br><span class="line">Test (<span class="number">2</span>A): initial election ...</span><br><span class="line">  ... Passed --   <span class="number">4.0</span>  <span class="number">3</span>   <span class="number">32</span>    <span class="number">9170</span>    <span class="number">0</span></span><br><span class="line">Test (<span class="number">2</span>A): election after network failure ...</span><br><span class="line">  ... Passed --   <span class="number">6.1</span>  <span class="number">3</span>   <span class="number">70</span>   <span class="number">13895</span>    <span class="number">0</span></span><br><span class="line">PASS</span><br><span class="line">ok      raft    <span class="number">10.187</span>s</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
+
+<h2 id="Part-2B"><a href="#Part-2B" class="headerlink" title="Part 2B"></a>Part 2B</h2><p>TASK: 实现 leader 和 follower 代码以附加新的日志条目，以便 <code>go test -run 2B</code> 测试通过。</p>
+<ul>
+<li>Hint：运行 <code>git pull</code> 获取最新的实验室软件。</li>
+<li>Hint：您的第一个目标应该是通过 <code>TestBasicAgree2B()</code>。首先实现<code>Start()</code>，然后编写代码，通过 <code>AppendEntries</code>  RPCs 发送和接收新的日志条目，如图 2 所示。</li>
+<li>Hint：你需要实施选举限制（本文第 5.4.1 节）。</li>
+<li>Hint：在早期的实验室 2B 测试中未能达成一致的一个方法是，即使领导人还活着，也要举行反复的选举。在选举计时器管理中寻找 Bug，或者在赢得选举后不要立即发送心跳。</li>
+<li>Hint：您的代码可能有循环，这些循环会反复检查某些事件。不要让这些循环在没有暂停的情况下连续执行，因为这会使您的实现速度减慢到无法通过测试。使用 Go 的  <a target="_blank" rel="noopener" href="https://golang.org/pkg/sync/#Cond">condition variables</a>，或者在每个循环迭代中插入一个 <code>time.Sleep(10 * time.Millisecond)</code>。</li>
+<li>Hint：为将来的 Lab 做点事，写（或重写）干净明了的代码。一些想法，您可以重新访问我们的 <a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/labs/raft-structure.txt">structure</a>、<a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/labs/raft-locking.txt">locking</a> 和 <a target="_blank" rel="noopener" href="https://thesquareplanet.com/blog/students-guide-to-raft/">guide</a> 页面。</li>
+</ul>
+<p>如果代码运行太慢，那么即将进行的 Lab 的测试可能会使代码失败。您可以使用time 命令检查解决方案使用的实时时间和 CPU 时间。以下是典型输出：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">$ time <span class="keyword">go</span> test -run <span class="number">2</span>B</span><br><span class="line">Test (<span class="number">2</span>B): basic agreement ...</span><br><span class="line">  ... Passed --   <span class="number">1.6</span>  <span class="number">3</span>   <span class="number">18</span>    <span class="number">5158</span>    <span class="number">3</span></span><br><span class="line">Test (<span class="number">2</span>B): RPC <span class="keyword">byte</span> count ...</span><br><span class="line">  ... Passed --   <span class="number">3.3</span>  <span class="number">3</span>   <span class="number">50</span>  <span class="number">115122</span>   <span class="number">11</span></span><br><span class="line">Test (<span class="number">2</span>B): agreement despite follower disconnection ...</span><br><span class="line">  ... Passed --   <span class="number">6.3</span>  <span class="number">3</span>   <span class="number">64</span>   <span class="number">17489</span>    <span class="number">7</span></span><br><span class="line">Test (<span class="number">2</span>B): no agreement <span class="keyword">if</span> too many followers disconnect ...</span><br><span class="line">  ... Passed --   <span class="number">4.9</span>  <span class="number">5</span>  <span class="number">116</span>   <span class="number">27838</span>    <span class="number">3</span></span><br><span class="line">Test (<span class="number">2</span>B): concurrent Start()s ...</span><br><span class="line">  ... Passed --   <span class="number">2.1</span>  <span class="number">3</span>   <span class="number">16</span>    <span class="number">4648</span>    <span class="number">6</span></span><br><span class="line">Test (<span class="number">2</span>B): rejoin of partitioned leader ...</span><br><span class="line">  ... Passed --   <span class="number">8.1</span>  <span class="number">3</span>  <span class="number">111</span>   <span class="number">26996</span>    <span class="number">4</span></span><br><span class="line">Test (<span class="number">2</span>B): leader backs up quickly over incorrect follower logs ...</span><br><span class="line">  ... Passed --  <span class="number">28.6</span>  <span class="number">5</span> <span class="number">1342</span>  <span class="number">953354</span>  <span class="number">102</span></span><br><span class="line">Test (<span class="number">2</span>B): RPC counts aren<span class="string">&#x27;t too high ...</span></span><br><span class="line"><span class="string">  ... Passed --   3.4  3   30    9050   12</span></span><br><span class="line"><span class="string">PASS</span></span><br><span class="line"><span class="string">ok      raft    58.142s</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">real    0m58.475s</span></span><br><span class="line"><span class="string">user    0m2.477s</span></span><br><span class="line"><span class="string">sys     0m1.406s</span></span><br><span class="line"><span class="string">$</span></span><br></pre></td></tr></table></figure>
+
+<p>“ok raft 58.142s” 表示 Go 测量的 2B 测试所用时间为实际（挂钟）时间的 58.142 秒。</p>
+<p>“user 0m2.477s” 意味着代码消耗了 2.477 秒的 CPU 时间，或者实际执行指令所花费的时间（而不是等待或休眠）。</p>
+<p>如果您的解决方案在 2B 测试中使用的实时时间远远超过 1 分钟，或者 CPU 时间超过 5 秒，那么以后可能会遇到麻烦。查找用于睡眠或等待 RPC 超时的时间、在不休眠或等待条件或通道消息的情况下运行的循环，或发送的大量 RPCs。</p>
+<h2 id="Part-2C"><a href="#Part-2C" class="headerlink" title="Part 2C"></a>Part 2C</h2><p>如果基于 Raft 的服务器重新启动，它应该在停止的地方恢复服务。这需要 Raft 保持持续状态，以便在重新启动后仍然存在。论文的图 2 提到了哪个状态应该是持久的。</p>
+<p>真正的实现会在 Raft 每次更改时将其持久状态写入磁盘，并在 reboot 后 restarting 时从磁盘读取状态。您的实现不会使用磁盘；相反，它将从 <code>Persister</code> 对象保存和恢复持久状态（请参见 <code>persister.go</code>）。调用 <code>Raft.Make()</code> 将提供一个  <code>Persister</code>，该持久器最初保持 <code>Raft</code> 最近的持久化状态（如果有的话）。Raft 应该从那个  <code>Persister</code> 初始化它的状态，并且应该在每次状态改变时使用它来保存它的持久状态。使用 <code>Persister</code> 的<code>ReadRaftState（）</code> 和 <code>SaveRaftState（）</code> 方法。</p>
+<p>TASK：完成 <code>raft.go</code> 中的 <code>persist()</code> 和 <code>readPersist()</code> ，通过添加代码来保存和恢复持久状态。您需要将状态编码（或“序列化”）为字节数组，以便将其传递给 <code>Persister</code>。使用 <code> labgob</code> 编码器；请参阅 <code>persist（）</code> 和<code> readPersist（）</code> 中的注释。<code>labgob</code> 类似于 Go 的 <code>gob</code> 编码器，但是如果您试图用小写字段名对结构进行编码，则会打印错误消息。</p>
+<p>TASK：在实现更改持久状态的点插入对 <code>persist()</code> 的调用。一旦你完成了这项工作，你就应该通过剩下的测试了。</p>
+<p>Note：为了避免内存耗尽，Raft 必须定期丢弃旧的日志条目，但是在下一个 Lab 之前，您不必担心这个问题。</p>
+<ul>
+<li>Hints：运行 <code>git pull</code> 获取最新的实验室软件。</li>
+<li>Hints：许多 2C 测试涉及服务器故障和网络丢失 RPC 请求或响应。</li>
+<li>Hints：您可能需要一次通过多个条目备份 nextIndex 的优化。从第7页的底部和第8页的顶部（用灰色线标记）查看 <a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf">extended Raft paper</a> 。论文在细节上含糊其辞，你需要填补空白，也许需要借助 6.824 的 Raft 讲座。</li>
+<li>Hints：全套 Lab 2 测试（2A+2B+2C）的合理时间消耗是 4 分钟的实时时间和 1 分钟的CPU时间。</li>
+</ul>
+<p>您的代码应该通过所有 2C 测试（如下所示），以及 2A 和 2B 测试。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="keyword">go</span> test -run <span class="number">2</span>C</span><br><span class="line">Test (<span class="number">2</span>C): basic persistence ...</span><br><span class="line">  ... Passed --   <span class="number">7.2</span>  <span class="number">3</span>  <span class="number">206</span>   <span class="number">42208</span>    <span class="number">6</span></span><br><span class="line">Test (<span class="number">2</span>C): more persistence ...</span><br><span class="line">  ... Passed --  <span class="number">23.2</span>  <span class="number">5</span> <span class="number">1194</span>  <span class="number">198270</span>   <span class="number">16</span></span><br><span class="line">Test (<span class="number">2</span>C): partitioned leader and one follower crash, leader restarts ...</span><br><span class="line">  ... Passed --   <span class="number">3.2</span>  <span class="number">3</span>   <span class="number">46</span>   <span class="number">10638</span>    <span class="number">4</span></span><br><span class="line">Test (<span class="number">2</span>C): Figure <span class="number">8</span> ...</span><br><span class="line">  ... Passed --  <span class="number">35.1</span>  <span class="number">5</span> <span class="number">9395</span> <span class="number">1939183</span>   <span class="number">25</span></span><br><span class="line">Test (<span class="number">2</span>C): unreliable agreement ...</span><br><span class="line">  ... Passed --   <span class="number">4.2</span>  <span class="number">5</span>  <span class="number">244</span>   <span class="number">85259</span>  <span class="number">246</span></span><br><span class="line">Test (<span class="number">2</span>C): Figure <span class="number">8</span> (unreliable) ...</span><br><span class="line">  ... Passed --  <span class="number">36.3</span>  <span class="number">5</span> <span class="number">1948</span> <span class="number">4175577</span>  <span class="number">216</span></span><br><span class="line">Test (<span class="number">2</span>C): churn ...</span><br><span class="line">  ... Passed --  <span class="number">16.6</span>  <span class="number">5</span> <span class="number">4402</span> <span class="number">2220926</span> <span class="number">1766</span></span><br><span class="line">Test (<span class="number">2</span>C): unreliable churn ...</span><br><span class="line">  ... Passed --  <span class="number">16.5</span>  <span class="number">5</span>  <span class="number">781</span>  <span class="number">539084</span>  <span class="number">221</span></span><br><span class="line">PASS</span><br><span class="line">ok      raft    <span class="number">142.357</span>s</span><br><span class="line">$ </span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+
+
+      
+    </div>
+    
+    
+    
+    <div>
+      
+        <div>
+    
+        <div style="text-align:center;color: #ccc;font-size:14px;">-------------本文结束<i class="fa fa-paw"></i>感谢您的阅读-------------</div>
+    
+</div>
+      
+    </div>
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/MIT-6-824/" rel="tag"># MIT 6.824</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/12/03/6.824-lab1/" rel="next" title="">
+                <i class="fa fa-chevron-left"></i> 
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2020/12/03/6.824-lab3/" rel="prev" title="">
+                 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+    </div>
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/uploads/avatar.png"
+                alt="" />
+            
+              <p class="site-author-name" itemprop="name"></p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+          <!--
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+          -->
+          
+          
+
+  <div class="links-of-blogroll motion-element links-of-blogroll-block">
+    <div class="links-of-blogroll-title">
+      <!-- modify icon to fire by szw -->
+      <i class="fa fa-history fa-" aria-hidden="true"></i>
+      近期文章
+    </div>
+    <ul class="links-of-blogroll-list">
+      
+      
+        <li class="recent_posts_li">
+          <a href="/2020/12/03/6.824-lab4/" title="" target="_blank"></a>
+        </li>
+      
+        <li class="recent_posts_li">
+          <a href="/2020/12/03/6.824-lab3/" title="" target="_blank"></a>
+        </li>
+      
+        <li class="recent_posts_li">
+          <a href="/2020/12/03/6.824-lab2/" title="" target="_blank"></a>
+        </li>
+      
+        <li class="recent_posts_li">
+          <a href="/2020/12/03/6.824-lab1/" title="" target="_blank"></a>
+        </li>
+      
+        <li class="recent_posts_li">
+          <a href="/2020/12/02/6.828-lab6/" title="Lab 6: 网络驱动" target="_blank">Lab 6: 网络驱动</a>
+        </li>
+      
+    </ul>
+  </div>
+
+<!--
+<div id="music163player">
+    <iframe frameborder="no" border="0" marginwidth="0" marginheight="0" width=330 height=86 src="//music.163.com/outchain/player?type=2&id=1407551413&auto=1&height=66"></iframe>
+</div>
+-->
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Introduction"><span class="nav-text">Introduction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Getting-Started"><span class="nav-text">Getting Started</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#The-code"><span class="nav-text">The code</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Part-2A"><span class="nav-text">Part 2A</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Part-2B"><span class="nav-text">Part 2B</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Part-2C"><span class="nav-text">Part 2C</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+<div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">别云</span>
+
+  
+</div>
+<div class="powered-by">
+  <i class="fa fa-user-md"></i><span id="busuanzi_container_site_uv">
+    本站访客数:<span id="busuanzi_value_site_uv"></span>
+  </span>
+</div>
+<!--
+
+
+
+
+
+-->
+
+<div class="theme-info">
+  <div class="powered-by"></div>
+  <span class="post-count">博客全站共59.9k字</span>
+</div>
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+  </div>
+  
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/three/three.min.js"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/three/three-waves.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  
+  <script type="text/javascript">
+    var GUEST = ['nick','mail','link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item=>{
+      return GUEST.indexOf(item)>-1;
+    });
+    new Valine({
+        el: '#comments' ,
+        verify: false,
+        notify: false,
+        appId: 'y8UDCfGVDHBgEMFSGqOzHUwq-gzGzoHsz',
+        appKey: 'rWYiG4yjCtJ6Hd9eJegMbUgs',
+        placeholder: 'Just go go',
+        avatar:'mm',
+        guest_info:guest,
+        pageSize:'10' || 10,
+    });
+  </script>
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"left","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

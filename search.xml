@@ -1,6 +1,156 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title></title>
+    <url>/2020/12/03/6.824-lab1/</url>
+    <content><![CDATA[<h2 id="Getting-started"><a href="#Getting-started" class="headerlink" title="Getting started"></a>Getting started</h2><p><code>/src/main/mrsequential.go</code> 是一个简单的顺序 mapreduce 实现。它在一个进程中一次运行一个 map 和 reduce。我们也为你提供了一对 MapReduce 应用：<code>mrapps/wc.go</code> 中的单词计数和 <code> mrapps/indexer.go</code>  中的文本索引器。可以按如下顺序运行字数统计：</p>
+<a id="more"></a>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">$ cd ~/<span class="number">6.824</span></span><br><span class="line">$ cd src/main</span><br><span class="line">$ <span class="keyword">go</span> build -buildmode=plugin ../mrapps/wc.<span class="keyword">go</span></span><br><span class="line">$ rm mr-out*</span><br><span class="line">$ <span class="keyword">go</span> run mrsequential.<span class="keyword">go</span> wc.so pg*.txt</span><br><span class="line">$ more mr-out<span class="number">-0</span></span><br><span class="line">A <span class="number">509</span></span><br><span class="line">ABOUT <span class="number">2</span></span><br><span class="line">ACT <span class="number">8</span></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<p><code>mrsequential.go</code> 把它的输出结果放在 <code>mr-out-0</code> 文件中。输入来自名为 <code>pg-xxx.txt </code> 的文件。</p>
+<p>请随意借用 <code>mrsequential.go</code>  中的代码。观察  <code>mrapps/wc.go</code>  以了解 MapReduce 应用应该长什么样。</p>
+<h2 id="Your-Job"><a href="#Your-Job" class="headerlink" title="Your Job"></a>Your Job</h2><p>实现一个分布式 MapReduce 应用，它包含两个程序，master 和 worker。 只有一个主进程和一个或多个工作进程并行执行。在一个真实的系统中，worker 将在一堆不同的机器上运行，但是对于这个 lab 来说，你将在一台机器上运行它们。worker 通过 RPC 和 master 通话。每个 worker 进程将向 master 请求任务，从一个或多个文件中读取任务的输入，执行任务，并将任务的输出写入一个或多个文件。如果一个 worker 没有在合理的时间内完成任务（对于这个实验，用 10 秒），master 应该注意，并把同样的任务交给另一个 worker。</p>
+<p>我们给了你一点代码来开始。master 和 worker 的 “main” 程序在 <code>main/mrmaster.go</code>  和 <code>main/mrworker.go</code>，不要更改这些文件。<code>mr/master.go</code>， <code>mr/worker.go</code>，和 <code>mr/rpc.go</code> 中放置你的实现。</p>
+<p>下面是如何在单词计数 MapReduce 应用程序上运行代码。</p>
+<p>首先，确保 word count 插件是新构建的：</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">$ <span class="keyword">go</span> build -buildmode=plugin ../mrapps/wc.<span class="keyword">go</span></span><br></pre></td></tr></table></figure>
+
+<p>在 main 目录下，运行 master。</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">$ rm mr-out*</span><br><span class="line">$ <span class="keyword">go</span> run mrmaster.<span class="keyword">go</span> pg-*.txt</span><br></pre></td></tr></table></figure>
+
+<p><code>mrmaster.go</code> 的  <code>pg-*.txt</code>  参数 是输入文件；每个文件对应一个 “split”，并且是一个 Map 任务的输入。</p>
+<p>在一个或多个其他窗口中，运行一些 worker：</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">$ <span class="keyword">go</span> run mrworker.<span class="keyword">go</span> wc.so</span><br></pre></td></tr></table></figure>
+
+<p>当 master 和 worker 完成后，输出在  <code>mr-out-*</code> 中。完成实验后，输出文件的排序并集应与顺序输出相匹配，如下所示：</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">$ cat mr-out-* | sort | more</span><br><span class="line">A <span class="number">509</span></span><br><span class="line">ABOUT <span class="number">2</span></span><br><span class="line">ACT <span class="number">8</span></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<p><code>main/test-mr.sh</code> 是一个测试脚本。它检查 <code>wc</code>  和 <code>indexer</code> 是否产生正确的输出结果，当把 <code>pg-xxx.txt</code>  文件作为输入。测试还检查您的实现是否并行运行 Map 和 Reduce 任务，以及您的实现是否从运行任务时崩溃的工作线程恢复。</p>
+<p>如果现在运行测试脚本，它将挂起，因为主脚本永远不会完成：</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">$ cd ~/<span class="number">6.824</span>/src/main</span><br><span class="line">$ sh test-mr.sh</span><br><span class="line">*** Starting wc test.</span><br></pre></td></tr></table></figure>
+
+<p>可以在 <code>mr/master.go</code> 中的 Done 函数中将 ret:=false 更改为 true ，以便master 立即退出。然后：</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">$ sh ./test-mr.sh</span><br><span class="line">*** Starting wc test.</span><br><span class="line">sort: No such file or directory</span><br><span class="line">cmp: EOF on mr-wc-all</span><br><span class="line">--- wc output is not the same as mr-correct-wc.txt</span><br><span class="line">--- wc test: FAIL</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
+
+<p>测试脚本期望在名为 <code>mr-out-X</code> 的文件中看到输出，每个 reduce 任务对应一个。空的 <code>mr/master.go</code> 和 <code>mr/worker.go</code> 不产生这些文件，所以测试会失败。</p>
+<p>完成后，测试脚本输出应如下所示：</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">$ sh ./test-mr.sh</span><br><span class="line">*** Starting wc test.</span><br><span class="line">--- wc test: PASS</span><br><span class="line">*** Starting indexer test.</span><br><span class="line">--- indexer test: PASS</span><br><span class="line">*** Starting <span class="keyword">map</span> parallelism test.</span><br><span class="line">--- <span class="keyword">map</span> parallelism test: PASS</span><br><span class="line">*** Starting reduce parallelism test.</span><br><span class="line">--- reduce parallelism test: PASS</span><br><span class="line">*** Starting crash test.</span><br><span class="line">--- crash test: PASS</span><br><span class="line">*** PASSED ALL TESTS</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
+
+<p>您还将看到 Go-RPC 包中的一些错误，如下所示:</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="number">019</span>/<span class="number">12</span>/<span class="number">16</span> <span class="number">13</span>:<span class="number">27</span>:<span class="number">09</span> rpc.Register: method <span class="string">&quot;Done&quot;</span> has <span class="number">1</span> input parameters; needs exactly three</span><br></pre></td></tr></table></figure>
+
+<p>忽略这些消息。</p>
+<h3 id="A-few-rules："><a href="#A-few-rules：" class="headerlink" title="A few rules："></a>A few rules：</h3><ul>
+<li>map 阶段应该将中间 keys 划分成 nReduce 份 reduce 任务，nReduce 是 <code>main/mrmaster.go</code>  传递给  <code>MakeMaster()</code> 的参数。</li>
+<li>worker 实现应该将第 X 个 reduce 任务的输出结果放在 <code>mr-out-X</code>  文件中。</li>
+<li>一个  <code>mr-out-X</code> 文件应该每个 Reduce 函数输出的一行。该行应该以Go “%v %v” 格式生成，用 key 和 value 调用。看一下 <code>main/mrsequential.go</code> ，找一行注释 “this is the correct format”。如果您的实现与这种格式偏离太多，测试脚本就会失败。</li>
+<li>你可以修改 <code>mr/worker.go</code>，<code>mr/master.go</code> 和  <code>mr/rpc.go</code>。您可以临时修改其他文件进行测试，但请确保您的代码与原始版本兼容；我们将使用原始版本进行测试。</li>
+<li>worker 应该将中间 Map 输出放在当前目录的文件中，您的 worker 稍后可以将它们作为 Reduce 任务的输入读取。</li>
+<li><code>main/mrmaster.go</code> 期望 <code>mr/master.go</code> 实现一个 <code>Done()</code> 方法，这个方法当 MapReduce 作业完全完成时返回 true；那时， <code>mrmaster.go</code> 将退出。</li>
+<li>当作业完全完成时，worker 进程应该退出。实现这一点的一个简单方法是使用<code>call()</code>的返回值：如果 worker 未能联系到 master，则可以假定master 已退出，因为作业已完成，因此 worker 也可以终止。根据您的设计，您可能会发现有一个“please exit”的伪任务，master 可以将它交给 worker。</li>
+</ul>
+<h3 id="Hints："><a href="#Hints：" class="headerlink" title="Hints："></a>Hints：</h3><ul>
+<li><p>一种方法是修改 <code>mr/worker.go</code>‘ 的 <code>Worker()</code> 向 master 发送 RPC 请求任务。然后修改 master 以使用尚未开始的 Map 任务的文件名进行响应。然后修改 worker 以读取该文件并调用应用程序 Map 函数，如 <code>mrsequential.go</code>所示。</p>
+</li>
+<li><p>应用程序 Map 和 Reduce 函数在运行时使用 Go-plugin 包从名称以 .so 结尾的文件加载。</p>
+</li>
+<li><p>如果你改变 <code>mr/</code>目录下的任务东西，你可能需要重新编译你使用 MapReduce 插件，就像 <code>go build -buildmode=plugin ../mrapps/wc.go</code>。</p>
+</li>
+<li><p>这个 Lab 依靠 worker 共享一个文件系统。当所有的 worker 运行在同一台机器上时，这很简单，但是如果 worker 运行在不同的机器上，则需要像 GFS 这样的全局文件系统。</p>
+</li>
+<li><p>中间文件的合理命名约定是 <code>mr-X-Y</code>，其中 X 是 Map 任务编号，Y 是 reduce 任务编号。</p>
+</li>
+<li><p>worker 的 map 任务代码将需要一种方法来存储文件中的中间 key/value 对，以便在 reduce 任务期间能够正确地读回。一种可能是使用 Go 的 encoding/json 包。要将 key/value 对写入 JSON 文件，请执行以下操作：</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">enc := json.NewEncoder(file)</span><br><span class="line"><span class="keyword">for</span> _, kv := ... &#123;</span><br><span class="line">  err := enc.Encode(&amp;kv)</span><br></pre></td></tr></table></figure>
+
+<p>把这样的文件读回：</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">dec := json.NewDecoder(file)</span><br><span class="line"><span class="keyword">for</span> &#123;</span><br><span class="line">  <span class="keyword">var</span> kv KeyValue</span><br><span class="line">  <span class="keyword">if</span> err := dec.Decode(&amp;kv); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">break</span></span><br><span class="line">  &#125;</span><br><span class="line">  kva = <span class="built_in">append</span>(kva, kv)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>worker 的 map 部分可以使用 <code>ihash(key)</code> 函数（<code>worker.go</code> 中）为给定的 key 选择 reduce 任务。</p>
+</li>
+<li><p>你可以从 <code>mrsequential.go</code> 借用用于读取 Map 输入文件、在 Map 和 Reduce 之间排序中间 key/value 对，以及将 Reduce 输出存储在文件中的代码。</p>
+</li>
+<li><p>master 作为 RPC 服务器将是并发的；不要忘记锁定共享数据。</p>
+</li>
+<li><p>使用 Go 的竞速检测器，有 Go build-race 和 Go-run-race。test-mr.sh 有一条注释，说明如何为测试启用竞争检测器。</p>
+</li>
+<li><p>worker 有时需要等待，例如，在最后一个 map 完成之前不能开始 reduce。一种可能是 worker 定期向 master 请求工作，在每次请求的等待时间使用 <code>time.Sleep()</code> 进行休眠。另一种可能是 master 中的相关 RPC 处理程序有一个等待的循环时间，使用 <code>time.Sleep()</code>  或  <code>sync.Cond</code>。Go 在它自己的线程中为每个 RPC 运行处理程序，因此一个处理程序正在等待的事实不会阻止 master 处理其他 RPC。</p>
+</li>
+<li><p>master 无法可靠地区分出崩溃的 worker、活着但因某种原因停滞的 worker，以及正在执行但速度太慢而无法发挥作用的 worker。你能做的最好的方法就是让 master 等待一段时间，然后放弃并重新将任务分配给其他 worker。对于这个 lab，让 master 等十秒钟，然后 master 应该假设 worker 已经死了（当然，可能没有）。</p>
+</li>
+<li><p>要测试崩溃恢复，可以使用 <code>mrapps/crash.go</code>应用程序插件。它在Map和Reduce函数中随机退出。</p>
+</li>
+<li><p>为了确保没有人在崩溃的情况下观察到部分写入的文件，MapReduce 论文提到了使用临时文件并在完全写入后自动重命名的技巧。你可以用<code>ioutil.TempFile</code> 文件创建临时文件并<code>os.Rename</code>以原子方式重命名它。</p>
+</li>
+<li><p><code>test-mr.sh</code> 运行 <code>mr tmp</code> 子目录中的所有进程，因此，如果出现问题，需要查看中间或输出文件，请查看那里。</p>
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>分布式</category>
+      </categories>
+      <tags>
+        <tag>MIT 6.824</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title></title>
+    <url>/2020/12/03/6.824-lab3/</url>
+    <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>在此 Lab 中，您将使用 Lab 2 的 Raft 库构建 容错 K/V 存储服务。您的 K/V 服务将是复制的状态机，由使用 Raft 进行复制的多个 K/V 服务器组成。您的 K/V 服务应继续处理客户端请求，只要大多数服务器处于活动状态，并且可以进行通信，尽管有其他故障或网络分区。</p>
+<a id="more"></a>
+
+<p>该服务支持三个操作：<code>Put(key, value)</code>, <code>Append(key, arg)</code>, and <code>Get(key)</code>。它维护一个 K/V 对的简单数据库。键和值是字符串。<code>Put()</code>  替换数据库中特定键的值，<code>Append(key, arg)</code> 将 arg 追加到键的值，<code>Get()</code> 获取键的当前值。<code>Get</code> 不存在的键应返回空字符串。对不存在的键的 <code>Append</code> 应像 <code>Put</code> 一样。每个客户端通过使用 Put/Append/Get 方法的 <code>Clerk</code> 与服务器进行通信。 <code>Clerk</code> 管理 RPC 与服务器的交互。</p>
+<p>您的服务必须为对 <code>Clerk</code> Get/Put/Append methods 的应用程序调用提供强的一致性。以下是我们所说的强一致性。如果一次调用一个，Get/Put/Append 方法应像系统只有一个状态副本一样，并且每个调用应遵守对上述调用序列所隐含状态的修改。对于并发调用，返回值和最终状态必须与操作按某种顺序一次执行一个调用相同。如果调用在时间上重叠，则调用是并发的，例如，如果客户端 X 调用<code>Clerk.Put()</code>，然后客户端 Y 调用 <code>Clerk.Append()</code>，然后客户端 X 的呼叫返回。此外，调用必须观察呼叫开始前完成的所有呼叫的影响（因此我们在技术上要求线性可线性化）。</p>
+<p>强一致性对应用程序来说很方便，因为这意味着，非正式地，所有客户端都看到相同的状态，并且它们都看到最新的状态。对于单个服务器来说，提供强一致性相对容易。如果复制服务，则比较困难，因为所有服务器都必须为并发请求选择相同的执行顺序，并且必须避免使用不是最新的状态回复客户端。</p>
+<p>这个 Lab 有两个部分。在 A 部分中，您将实现该服务，而不必担心 Raft 日志可以不受约束地增长。在 B 部分中，您将实现快照（本文中的第 7 节），这将允许 Raft 丢弃旧的日志条目。请在相应截止日期前提交每个部分。</p>
+<p>You should reread the <a href="https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf">extended Raft paper</a>, in particular Sections 7 and 8. For a wider perspective, have a look at Chubby, Paxos Made Live, Spanner, Zookeeper, Harp, Viewstamped Replication, and <a href="http://static.usenix.org/event/nsdi11/tech/full_papers/Bolosky.pdf">Bolosky et al.</a></p>
+<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><p>We supply you with skeleton code and tests in <code>src/kvraft</code>. You will need to modify <code>kvraft/client.go</code>, <code>kvraft/server.go</code>, and perhaps <code>kvraft/common.go</code>.</p>
+<h2 id="Part-A-Key-value-service-without-log-compaction"><a href="#Part-A-Key-value-service-without-log-compaction" class="headerlink" title="Part A: Key/value service without log compaction"></a>Part A: Key/value service without log compaction</h2><p>每个 K/V 服务器（“kvservers”）都将有一个关联的 Raft 对等方。Clerks 将<code>Put()</code>、<code>Append（) </code>和 <code>Get()</code> RPCs 发送到 kvserver，其关联的 Raft 是 leader。kvserver 代码将 Put/Append/Get 操作提交到 Raft，以便 Raft 日志保存一系列 Put/Append/Get 操作。所有的 kvserver 按照顺序执行 Raft 日志中的操作，将这些操作应用到它们的 K/V 数据库中；其目的是让服务器维护 K/V 数据库的相同副本。</p>
+<p><code>Clerk</code> 有时不知道哪个 kvserver 是 Raft leader。如果 <code>Clerk</code> 将 RPC 发送到错误的 kvserver，或者它无法到达 kvserver，则 <code>Clerk</code> 应该通过发送到另一个 kvserver 来重新尝试。如果 K/V 服务将操作提交到其 Raft 日志中（因此将操作应用于 K/V 状态机），则 leader 通过响应其 RPC 将结果报告给 <code>Clerk</code> 。如果操作未能提交（例如，如果替换了 leader），服务器将报告一个错误，而 <code>Clerk</code> 将使用另一个服务器重试。</p>
+<p>您的 kvserver 不应该直接通信；它们只能通过 Raft 进行互动。对于Lab 3 的所有部分，您必须确保您的 Raft 实现继续通过所有的 Lab 2 测试。</p>
+<h3 id="TASK"><a href="#TASK" class="headerlink" title="TASK:"></a>TASK:</h3><p>您的第一个任务是实现一个解决方案，该解决方案在没有丢弃的消息和没有出现故障的服务器时起作用。</p>
+<p>您需要将 RPC-sending 代码添加到 Clerk Put/Append/Get 方法中 <code>client.go</code>，并在 <code>server.go</code> 中实现 <code>PutAppend()</code>和 <code>Get()</code> RPC处理程序。这些处理程序应该使用 <code>Start()</code> 在 Raft 日志中输入一个 <code>Op</code>；您应该在 <code>server.go</code> 中填写 <code>Op</code> 结构，因此它描述了一个 Put/Append/Get 操作。每台服务器都应该在 Raft 提交 <code>Op</code> 命令时执行它们，即它们出现在 <code>applyCh</code> 上。RPC 处理程序应该在 Raft 提交 <code>Op</code> 时注意，然后回复 RPC。</p>
+<p>当您可靠地通过测试套件中的第一个测试：“One client ”时，您就完成了这项任务。</p>
+<h3 id="Hints"><a href="#Hints" class="headerlink" title="Hints:"></a>Hints:</h3><p>Hint: 在调用 <code>Start()</code> 之后，kvserver 需要等待 Raft 完成协议。已经达成一致的命令在 <code>applyCh</code> 到达。当 <code>PutpAppend()</code> 和 <code>Get()</code> 处理程序使用 <code>Start()</code> 向 Raft 日志提交命令时，您的代码需要继续读取 <code>applyCh</code>。小心 kvserver 和它的 Raf t库之间的死锁。</p>
+<p>Hint: 您可以向 Raft <code>ApplyMsg</code> 添加字段，也可以向 Raft RPCs（如<code>AppendEntries</code>）添加字段。</p>
+<p>Hint: 如果 kvserver 不是多数的一部分，则不应完成  <code>Get()</code> RPC（这样它就不会提供过时的数据）。一个简单的解决方案是在 Raft 日志中输入每个 <code>Get()</code>（以及每个 <code>Put()</code> 和 <code>Append()</code>）。您不必实现第 8 节中描述的只读操作的优化。</p>
+<p>Hint: 最好从一开始就添加锁，因为避免死锁的需要有时会影响整个代码设计。使用 <code>go test -race</code> 检查您的代码是否 rece-free。</p>
+<p>现在，您应该修改您的解决方案，以便在遇到网络和服务器故障时继续。您将面临的一个问题是，一个 <code>Clerk</code> 可能不得不多次发送 RPC，直到找到一个 kvserver 积极响应为止。如果一个 leader 在提交 Raft 日志条目后失败，该 <code>Clerk</code> 可能不会收到回复，因此可以将请求重新发送给另一个 leader。每次调用 <code>Clerk.Put()</code>  或 <code>Clerk.Append()</code> 应该只执行一次，因此必须确保重新发送不会导致服务器执行两次请求。</p>
+<h3 id="TASK-1"><a href="#TASK-1" class="headerlink" title="TASK:"></a>TASK:</h3><p>添加代码来处理失败，并处理重复的 <code>Clerk</code> 请求，包括 <code>Clerk</code> 在一个 term 中将请求发送给 kvserver leader，等待应答超时，并在另一个 term 中将请求重新发送给新的 leader。请求应该只执行一次。您的代码应该通过 <code>go test -run 3A</code> 测试。</p>
+<h3 id="Hints-1"><a href="#Hints-1" class="headerlink" title="Hints:"></a>Hints:</h3><p>Hint: 您的解决方案需要处理一个为 Clerk’s  RPC 调用 Start() 的 leader，但是在请求提交到日志之前就失去了领导地位。在这种情况下，您应该安排 Clerk 将请求重新发送到其他服务器，直到它找到新的 leader。一种方法是，服务器通过探测到Start() 返回的索引中出现了不同的请求，或者 Raft 的 Term 发生了变化，来检测它是否失去了领导地位。如果前 leader 被自己分割，它就不知道 leader 了；但是同一个分区中的任何客户机也不能与新的 leader 对话，所以在这种情况下，服务器和客户机可以无限期地等待分区恢复。</p>
+<p>Hint: 您可能需要修改您的 Clerk，以记住哪个服务器是最后一个 RPC 的 leader，并首先将下一个 RPC 发送到该服务器。这将避免在每个 RPC 上浪费时间搜索 leader，这可能会帮助您足够快地通过一些测试。</p>
+<p>Hint: 您需要唯一地标识客户机操作，以确保 K/V 服务只执行一次。</p>
+<p>Hint: 重复检测的方案应该可以快速释放服务器内存，例如让每个 RPC 都暗示客户机已经看到了其前一个 RPC 的回复。假设一个客户一次只调用一次 Clerk 是可以的。</p>
+<p>Your code should now pass the Lab 3A tests, like this:</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">$ <span class="keyword">go</span> test -run <span class="number">3</span>A</span><br><span class="line">Test: one client (<span class="number">3</span>A) ...</span><br><span class="line">  ... Passed --  <span class="number">15.1</span>  <span class="number">5</span> <span class="number">12882</span> <span class="number">2587</span></span><br><span class="line">Test: many clients (<span class="number">3</span>A) ...</span><br><span class="line">  ... Passed --  <span class="number">15.3</span>  <span class="number">5</span>  <span class="number">9678</span> <span class="number">3666</span></span><br><span class="line">Test: unreliable net, many clients (<span class="number">3</span>A) ...</span><br><span class="line">  ... Passed --  <span class="number">17.1</span>  <span class="number">5</span>  <span class="number">4306</span> <span class="number">1002</span></span><br><span class="line">Test: concurrent <span class="built_in">append</span> to same key, unreliable (<span class="number">3</span>A) ...</span><br><span class="line">  ... Passed --   <span class="number">0.8</span>  <span class="number">3</span>   <span class="number">128</span>   <span class="number">52</span></span><br><span class="line">Test: progress in majority (<span class="number">3</span>A) ...</span><br><span class="line">  ... Passed --   <span class="number">0.9</span>  <span class="number">5</span>    <span class="number">58</span>    <span class="number">2</span></span><br><span class="line">Test: no progress in minority (<span class="number">3</span>A) ...</span><br><span class="line">  ... Passed --   <span class="number">1.0</span>  <span class="number">5</span>    <span class="number">54</span>    <span class="number">3</span></span><br><span class="line">Test: completion after heal (<span class="number">3</span>A) ...</span><br><span class="line">  ... Passed --   <span class="number">1.0</span>  <span class="number">5</span>    <span class="number">59</span>    <span class="number">3</span></span><br><span class="line">Test: partitions, one client (<span class="number">3</span>A) ...</span><br><span class="line">  ... Passed --  <span class="number">22.6</span>  <span class="number">5</span> <span class="number">10576</span> <span class="number">2548</span></span><br><span class="line">Test: partitions, many clients (<span class="number">3</span>A) ...</span><br><span class="line">  ... Passed --  <span class="number">22.4</span>  <span class="number">5</span>  <span class="number">8404</span> <span class="number">3291</span></span><br><span class="line">Test: restarts, one client (<span class="number">3</span>A) ...</span><br><span class="line">  ... Passed --  <span class="number">19.7</span>  <span class="number">5</span> <span class="number">13978</span> <span class="number">2821</span></span><br><span class="line">Test: restarts, many clients (<span class="number">3</span>A) ...</span><br><span class="line">  ... Passed --  <span class="number">19.2</span>  <span class="number">5</span> <span class="number">10498</span> <span class="number">4027</span></span><br><span class="line">Test: unreliable net, restarts, many clients (<span class="number">3</span>A) ...</span><br><span class="line">  ... Passed --  <span class="number">20.5</span>  <span class="number">5</span>  <span class="number">4618</span>  <span class="number">997</span></span><br><span class="line">Test: restarts, partitions, many clients (<span class="number">3</span>A) ...</span><br><span class="line">  ... Passed --  <span class="number">26.2</span>  <span class="number">5</span>  <span class="number">9816</span> <span class="number">3907</span></span><br><span class="line">Test: unreliable net, restarts, partitions, many clients (<span class="number">3</span>A) ...</span><br><span class="line">  ... Passed --  <span class="number">29.0</span>  <span class="number">5</span>  <span class="number">3641</span>  <span class="number">708</span></span><br><span class="line">Test: unreliable net, restarts, partitions, many clients, linearizability checks (<span class="number">3</span>A) ...</span><br><span class="line">  ... Passed --  <span class="number">26.5</span>  <span class="number">7</span> <span class="number">10199</span>  <span class="number">997</span></span><br><span class="line">PASS</span><br><span class="line">ok      kvraft  <span class="number">237.352</span>s</span><br></pre></td></tr></table></figure>
+
+<p>每次传递后的数字是实时的（以秒为单位）、对等机的数量、发送的 RPC 的数量（包括客户端 RPC）以及执行的 K/V 操作数（Clark Get/Put/Append 调用）。</p>
+<h2 id="Part-B-Key-value-service-with-log-compaction"><a href="#Part-B-Key-value-service-with-log-compaction" class="headerlink" title="Part B: Key/value service with log compaction"></a>Part B: Key/value service with log compaction</h2><p>现在代码的情况是，重新启动的服务器会重播完整的 Raft 日志，以便恢复其状态。然而，对于长期运行的服务器来说，永远记住完整的 Raft 日志是不实际的。相反，您将修改 Raft 和 kvserver 以协作以节省空间：kvserver 将不时地持久地存储其当前状态的“snapshot”，Raft 将丢弃快照之前的日志条目。当服务器重新启动（或远远落后于领先者，必须赶上）时，服务器首先安装快照，然后从创建快照的时间点重新播放日志条目。</p>
+<p>Section 7 of the <a href="https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf">extended Raft paper</a> outlines the scheme; you will have to design the details.</p>
+<p>您必须在 Raft 库和服务之间设计一个接口，以允许 Raft 库丢弃日志条目。你必须修改你的 Raft 代码来操作，同时只存储 log 的尾部。Raft应该以允许 Go 垃圾回收器释放和重新使用内存的方式丢弃旧的日志条目；这要求对丢弃的日志条目没有可访问的引用（指针）。</p>
+<p>测试仪将 <code>maxraftstate </code>传递给 <code>StartKVServer()</code>。<code>maxraftstate</code> 以字节表示持久Raft状态的最大允许大小（包括日志，但不包括快照）。你应该把 <code>maxraftstate</code> 与 <code>persister.RaftStateSize()</code> 相比较。每当 K/V 服务器检测到 Raft 状态大小接近这个阈值时，它应该保存一个快照，并告诉 Raft 库它已经快照，这样 Raft 就可以丢弃旧的日志条目。如果 <code>maxraftstate</code> 为 -1，则不必快照。<code>maxraftstate</code> 应用于 Raft 传递到的 GOB 编码字节<code>persister.SaveRaftState()</code>。</p>
+<h3 id="TASK-2"><a href="#TASK-2" class="headerlink" title="TASK:"></a>TASK:</h3><p>修改您的 Raft，以便它可以被赋予一个日志索引，丢弃该索引之前的条目，继续操作，同时只存储该索引之后的日志条目。确保 Lab 2 的所有 Raft 测试仍然成功。</p>
+<h3 id="TASK-3"><a href="#TASK-3" class="headerlink" title="TASK:"></a>TASK:</h3><p>修改 kvserver，以便它检测到持久 Raft 状态何时变得过大，然后将快照交给 Raft，并告诉 Raft 它可以丢弃旧的日志条目。Raft 应该使用<code>persister.SaveStateAndSnapshot()</code>保存每个快照（不使用文件）。kvserver 实例应该在重新启动时从 persister 恢复快照。</p>
+<h3 id="Hint"><a href="#Hint" class="headerlink" title="Hint:"></a>Hint:</h3><p>Hint: 考虑一下 kvserver 何时应该对其状态进行快照，以及快照中应该包含哪些内容。Raft 必须使用 <code>SaveStateAndSnapshot()</code> 将每个快照以及相应的 Raft 状态存储在 persister 对象中。可以使用 <code>ReadSnapshot()</code>读取存储的最新快照。</p>
+<p>Hint: kvserver 必须能够跨检查点检测日志中的重复操作，因此用于检测这些操作的任何状态都必须包含在快照中。</p>
+<p>Hint: 将快照中存储的所有结构字段大写。</p>
+<p>Hint: 您可以向 Raft 添加方法，以便 kvserver 可以管理修剪 Raft 日志的过程并管理 kvserver 快照。</p>
+<h3 id="TASK-4"><a href="#TASK-4" class="headerlink" title="TASK:"></a>TASK:</h3><p>修改 Raft leader 代码，以便在 leader 丢弃跟随者所需的日志条目时将InstallSnapshot RPC 发送给跟随者。当跟随者接收到 InstallSnapshot RPC 时，它必须将包含的快照交给它的 kvserver。为此，可以使用 applyCh，方法是向 ApplyMsg 添加新字段。当您的解决方案通过所有的 Lab 3 测试时，它就完成了。</p>
+<h3 id="Hint-1"><a href="#Hint-1" class="headerlink" title="Hint:"></a>Hint:</h3><p>Hint: 在单个 InstallSnapshot RPC 中发送整个快照。不要实现图 13 中分割快照的偏移机制。 </p>
+<p>Hint: 在继续进行其他快照测试之前，请确保通过了 TestSnapshotRPC。</p>
+<p>Hint: Lab 3 测试的合理时间是 400 秒的实时时间和 700 秒的 CPU 时间。此外， <code>go test -run TestSnapshotSize</code>  的实时时间应该少于20秒。</p>
+<p>Your code should pass the 3B tests (as in the example here) as well as the 3A tests (and your Raft must continue to pass the Lab 2 tests).</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">$ <span class="keyword">go</span> test -run <span class="number">3</span>B</span><br><span class="line">Test: InstallSnapshot RPC (<span class="number">3</span>B) ...</span><br><span class="line">  ... Passed --   <span class="number">1.5</span>  <span class="number">3</span>   <span class="number">163</span>   <span class="number">63</span></span><br><span class="line">Test: snapshot size is reasonable (<span class="number">3</span>B) ...</span><br><span class="line">  ... Passed --   <span class="number">0.4</span>  <span class="number">3</span>  <span class="number">2407</span>  <span class="number">800</span></span><br><span class="line">Test: restarts, snapshots, one client (<span class="number">3</span>B) ...</span><br><span class="line">  ... Passed --  <span class="number">19.2</span>  <span class="number">5</span> <span class="number">123372</span> <span class="number">24718</span></span><br><span class="line">Test: restarts, snapshots, many clients (<span class="number">3</span>B) ...</span><br><span class="line">  ... Passed --  <span class="number">18.9</span>  <span class="number">5</span> <span class="number">127387</span> <span class="number">58305</span></span><br><span class="line">Test: unreliable net, snapshots, many clients (<span class="number">3</span>B) ...</span><br><span class="line">  ... Passed --  <span class="number">16.3</span>  <span class="number">5</span>  <span class="number">4485</span> <span class="number">1053</span></span><br><span class="line">Test: unreliable net, restarts, snapshots, many clients (<span class="number">3</span>B) ...</span><br><span class="line">  ... Passed --  <span class="number">20.7</span>  <span class="number">5</span>  <span class="number">4802</span> <span class="number">1005</span></span><br><span class="line">Test: unreliable net, restarts, partitions, snapshots, many clients (<span class="number">3</span>B) ...</span><br><span class="line">  ... Passed --  <span class="number">27.1</span>  <span class="number">5</span>  <span class="number">3281</span>  <span class="number">535</span></span><br><span class="line">Test: unreliable net, restarts, partitions, snapshots, many clients, linearizability checks (<span class="number">3</span>B) ...</span><br><span class="line">  ... Passed --  <span class="number">25.0</span>  <span class="number">7</span> <span class="number">11344</span>  <span class="number">748</span></span><br><span class="line"></span><br><span class="line">PASS</span><br><span class="line">ok      kvraft  <span class="number">129.114</span>s</span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <categories>
+        <category>分布式</category>
+      </categories>
+      <tags>
+        <tag>MIT 6.824</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>序章</title>
     <url>/2020/12/01/hello-world/</url>
     <content><![CDATA[<p>做一个记录吧，对我的余生。</p>
@@ -10,8 +160,182 @@
 ]]></content>
   </entry>
   <entry>
+    <title></title>
+    <url>/2020/12/03/6.824-lab2/</url>
+    <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>这是您将构建的一个容错 键/值 存储系统的一系列实验中的第一个。在这个实验室中，您将实现 Raft，一个复制的状态机协议。在下一个实验中，您将在 Raft 的顶部构建一个 key/value 服务。然后，您将在多个复制状态机上“切分”服务，以获得更高的性能。</p>
+<a id="more"></a>
+<p>复制服务通过在多个副本服务器上存储其状态（即数据）的完整副本来实现容错。复制允许服务继续运行，即使它的一些服务器出现故障（崩溃或网络损坏或不稳定）。问题是，故障可能会导致副本保存不同的数据状态更高性能的机器。</p>
+<p>Raft 将客户机请求组织成一个称为日志的序列，并确保所有副本服务器看到相同的日志。每个副本按日志顺序执行客户机请求，并将其应用于服务状态的本地副本。因为所有的实时副本都看到相同的日志内容，所以它们都以相同的顺序执行相同的请求，因此继续具有相同的服务状态。如果服务器出现故障但后来恢复，Raft 会负责更新日志。只要这些服务器中至少有大多数还活着，并且能够相互通信，Raft 就将继续运行。如果没有这样的多数，Raft 将不会取得任何进展，但一旦多数人能够再次沟通，它就会从中断的地方重新开始。</p>
+<p>在这个 Lab 中，您将实现 Raft 作为一个带有关联方法的 Go 对象类型，这意味着在一个更大的服务中用作一个模块。一组 Raft 实例通过 RPC 相互通信来维护复制的日志。Raft 接口将支持不确定的编号命令序列，也称为日志条目。条目用索引号编号。最终将提交具有给定索引的日志条目。此时，您的 Raft 应该将日志条目发送到更大的服务以供其执行。</p>
+<p>您应该按照 <a href="https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf">extended Raft paper</a> 中的设计，特别注意图2。您将实现本文中的大部分内容，包括保存持久状态并在节点发生故障后读取它，然后重新启动。您不会实现集群成员身份更改（第 6 节）。您将在稍后的 Lab 中实现日志压缩/快照（第 7 节）。</p>
+<p>您可能会发现本 <a href="https://thesquareplanet.com/blog/students-guide-to-raft/">guide</a>  以及关于 <a href="https://pdos.csail.mit.edu/6.824/labs/raft-locking.txt">locking</a> 和 <a href="https://pdos.csail.mit.edu/6.824/labs/raft-structure.txt">structure</a>  的建议非常有用。从更广泛的角度来看，可以看看 Paxos，Chubby，Paxos Make Live，Spanner，Zookeeper，Harp，Viewstamped Replication，以及 Bolosky 等。</p>
+<p>这个 Lab 分三部分完成。</p>
+<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><p>如果你已经完成了 Lab 1，你已经有了一份 Lab 源代码的副本。</p>
+<p>我们为您提供骨架代码  <code>src/raft/raft.go</code>。 我们还提供了一组测试，您应该使用这些测试来推动您的实现工作，我们将使用这些测试对您提交的 Lab 进行评分。这些测试在 <code>src/raft/test_test.go</code> 中。</p>
+<p>要启动并运行，请执行以下命令。别忘了获取最新软件 <code>git pull</code>。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ cd ~&#x2F;6.824</span><br><span class="line">$ git pull</span><br><span class="line">...</span><br><span class="line">$ cd src&#x2F;raft</span><br><span class="line">$ go test</span><br><span class="line">Test (2A): initial election ...</span><br><span class="line">--- FAIL: TestInitialElection2A (5.04s)</span><br><span class="line">        config.go:326: expected one leader, got none</span><br><span class="line">Test (2A): election after network failure ...</span><br><span class="line">--- FAIL: TestReElection2A (5.03s)</span><br><span class="line">        config.go:326: expected one leader, got none</span><br><span class="line">...</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
+
+<h2 id="The-code"><a href="#The-code" class="headerlink" title="The code"></a>The code</h2><p>通过向  <code>raft/raft.go</code>添加代码来实现 Raft。在该文件中，您将找到框架代码，以及如何发送和接收RPC的示例。在该文件中，您将找到框架代码，以及如何发送和接收 RPCs 的示例。</p>
+<p>您的实现必须支持以下接口，tester 和（最终）键/值 服务器将使用该接口。更多详细信息，请参见 <code>raft.go</code>。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F; create a new Raft server instance:</span><br><span class="line">rf :&#x3D; Make(peers, me, persister, applyCh)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; start agreement on a new log entry:</span><br><span class="line">rf.Start(command interface&#123;&#125;) (index, term, isleader)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; ask a Raft for its current term, and whether it thinks it is leader</span><br><span class="line">rf.GetState() (term, isLeader)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; each time a new entry is committed to the log, each Raft peer</span><br><span class="line">&#x2F;&#x2F; should send an ApplyMsg to the service (or tester).</span><br><span class="line">type ApplyMsg</span><br></pre></td></tr></table></figure>
+
+<p>一个服务调用 <code>Make(peers,me,…)</code> 来创建一个 Raft peer。peers 参数是 Raft 对等方（包括这个）的网络标识符数组，用于 RPC。me 参数是 peers 数组中该对等方的索引。 <code>Start(command)</code> 请求Raft启动处理，将命令附加到复制的日志中。<code>Start()</code> 应该立即返回，而不必等待日志追加完成。该服务期望您的实现为每个新提交的日志条目向 <code>Make()</code> 的 <code>applyCh</code> channel 参数发送一个 <code>ApplyMsg</code>。</p>
+<p><code>raft.go</code> 包含发送 RPC（<code>sendRequestVote（）</code>）和处理传入RPC（<code>RequestVote（）</code>）的示例代码。Raft 对等方应该使用 labrpc Go 包交换RPCs（源代码在 <code>src/labrpc</code> 中）。tester 可以告诉 <code>labrpc</code> 延迟 RPCs，重新排序，并丢弃它们来模拟各种网络故障。虽然您可以临时修改 <code>labrpc</code>，但请确保您的 Raft 与原始 <code>labrpc</code> 一起工作，因为这是我们将用来测试和评分的 Lab。Raft 实例必须只与 RPC 交互；例如，不允许它们使用共享 Go 变量或文件进行通信。</p>
+<p>后续的实验是在这个 Lab 的基础上进行的，所以给自己足够的时间来编写可靠的代码是很重要的。</p>
+<h2 id="Part-2A"><a href="#Part-2A" class="headerlink" title="Part 2A"></a>Part 2A</h2><p>TASK: 实现 Raft 领导人选举和心跳（没有日志项的 <code>AppendEntries</code> RPCs）。</p>
+<p>TASK: 2A 部分的目标是选出一个领导者，如果没有失败，领导者仍然是领导者，如果旧领导者失败或者与旧领导者之间的数据包丢失，则由新的领导者接管。</p>
+<p>Run <code>go test -run 2A</code> to test your 2A code.</p>
+<ul>
+<li>Hint：您不可能轻松地直接运行 Raft 实现；相反，您应该通过 tester 来运行它，即 <code>go test -run 2A</code>。</li>
+<li>Hint：参照论文的图 2。此时，您需要发送和接收 RequestVote RPC、与选举相关的服务器规则以及与领导人选举相关的状态。</li>
+<li>Hint：将图 2 中的领导人选举状态添加到 <code>raft.go</code> 中的 Raft 结构。您还需要定义一个结构来保存关于每个日志条目的信息。</li>
+<li>Hint：填写 <code>RequestVoteArgs</code> 和 <code>RequestVoteReply</code> 结构。修改<code>Make()</code> 以创建一个后台 goroutine，当它有一段时间没有收到另一个对等方的消息时，通过发送 <code>RequestVote RPC</code> 来定期启动领导人选举。这样，同龄人就可以知道谁是领导者，如果已经有领导者，或者自己成为领导者。实现 <code>RequestVote（）</code> RPC处理程序，以便服务器相互投票。</li>
+<li>要实现心跳，请定义一个 <code>AppendEntries</code> RPCs 结构（尽管您可能还不需要所有参数），并让领导定期发送它们。编写一个<code>AppendEntries</code> RPC处理程序方法来重置选举超时，这样当一个服务器已经被选中时，其他服务器就不会作为领导者向前迈进。</li>
+<li>Hint：确保不同同龄人的选举超时不要总是同时发生，否则所有同龄人都只为自己投票，没有人会成为 leader。</li>
+<li>Hint：tester 要求领导者每秒发送心跳 RPCs 的次数不超过 10 次。</li>
+<li>Hint：tester 要求你的 Raft 在旧领导失败后的 5 秒内选出一个新的领导者（如果大多数同龄人仍然可以交流的话）。然而，请记住，在出现分裂投票的情况下，领导人选举可能需要多轮投票（如果数据包丢失或候选人不幸地选择了相同的随机退避时间，则可能会发生这种情况）。你必须选择足够短的选举超时（以及心跳间隔），即使需要多轮选举，也很可能在不到 5 秒的时间内完成选举。</li>
+<li>Hint：论文第 5.2 节提到选举超时在 150 到 300 毫秒之间。只有当领导者发送心跳的频率大大高于每 150 毫秒一次时，这样的范围才有意义。因为tester 把你的心跳限制在每秒 10 次，你必须使用一个比论文 150 到 300 毫秒还要大的选举超时时间，但不要太大，因为这样你可能无法在 5 秒钟内选出一位领导人。</li>
+<li>Hint：你会发现 Go 的  <a href="https://golang.org/pkg/math/rand/">rand</a>  很有用。</li>
+<li>Hint：您将需要编写定期或在时间延迟后执行操作的代码。最简单的方法是创建一个 goroutine，其中循环调用 <code> time.Sleep()</code>。不要使用 Go 的 <code>time.Timer</code> 和 <code>time.Ticker</code>，他们很难正确使用。</li>
+<li>Hint：阅读这个关于  <a href="https://pdos.csail.mit.edu/6.824/labs/raft-locking.txt">locking</a> 和 <a href="https://pdos.csail.mit.edu/6.824/labs/raft-structure.txt">structure</a> 的建议。</li>
+<li>Hint：如果您的代码无法通过测试，请再次阅读本论文的图 2；领导选举的完整逻辑分布在图的多个部分。</li>
+<li>Hint：别忘了实现 <code>GetState()</code>。</li>
+<li>Hint：当 tester 永久关闭一个实例时，它会调用你的 Raft’s 的 <code>rf.Kill()</code> 。 你可检查 <code>Kill()</code> 是否被使用 <code>rf.Kill()</code> 调用。您可能希望在所有循环中都这样做，以避免死掉的 Raft 实例打印出令人困惑的消息。</li>
+<li>Hint：调试代码的一个好方法是在对等端发送或接收消息时插入 print 语句，并使用  <code>go test-run 2a &gt; out </code> 将输出收集到一个文件中。然后，通过研究 <code>out</code> 文件中的消息跟踪，您可以确定您的实现偏离了所需的协议。你可能会发现 <code>util.go</code> 中的 <code>Dprintf</code> 在用于在调试不同问题时打开和关闭打印很有用。</li>
+<li>Hint：Go-RPC 只发送名称以大写字母开头的结构字段。子结构还必须具有大写字段名（例如数组中的日志记录字段）。<code>labgob</code> 包将警告您这一点；不要忽略这些警告。</li>
+<li>Hint：用 <code>go test -race</code> 检查您的代码，并修复它报告的任何竞争。</li>
+</ul>
+<p>在提交第 2A 部分之前，请确保您通过了 2 A测试，以便您看到如下内容：</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">$ <span class="keyword">go</span> test -run <span class="number">2</span>A</span><br><span class="line">Test (<span class="number">2</span>A): initial election ...</span><br><span class="line">  ... Passed --   <span class="number">4.0</span>  <span class="number">3</span>   <span class="number">32</span>    <span class="number">9170</span>    <span class="number">0</span></span><br><span class="line">Test (<span class="number">2</span>A): election after network failure ...</span><br><span class="line">  ... Passed --   <span class="number">6.1</span>  <span class="number">3</span>   <span class="number">70</span>   <span class="number">13895</span>    <span class="number">0</span></span><br><span class="line">PASS</span><br><span class="line">ok      raft    <span class="number">10.187</span>s</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
+
+<h2 id="Part-2B"><a href="#Part-2B" class="headerlink" title="Part 2B"></a>Part 2B</h2><p>TASK: 实现 leader 和 follower 代码以附加新的日志条目，以便 <code>go test -run 2B</code> 测试通过。</p>
+<ul>
+<li>Hint：运行 <code>git pull</code> 获取最新的实验室软件。</li>
+<li>Hint：您的第一个目标应该是通过 <code>TestBasicAgree2B()</code>。首先实现<code>Start()</code>，然后编写代码，通过 <code>AppendEntries</code>  RPCs 发送和接收新的日志条目，如图 2 所示。</li>
+<li>Hint：你需要实施选举限制（本文第 5.4.1 节）。</li>
+<li>Hint：在早期的实验室 2B 测试中未能达成一致的一个方法是，即使领导人还活着，也要举行反复的选举。在选举计时器管理中寻找 Bug，或者在赢得选举后不要立即发送心跳。</li>
+<li>Hint：您的代码可能有循环，这些循环会反复检查某些事件。不要让这些循环在没有暂停的情况下连续执行，因为这会使您的实现速度减慢到无法通过测试。使用 Go 的  <a href="https://golang.org/pkg/sync/#Cond">condition variables</a>，或者在每个循环迭代中插入一个 <code>time.Sleep(10 * time.Millisecond)</code>。</li>
+<li>Hint：为将来的 Lab 做点事，写（或重写）干净明了的代码。一些想法，您可以重新访问我们的 <a href="https://pdos.csail.mit.edu/6.824/labs/raft-structure.txt">structure</a>、<a href="https://pdos.csail.mit.edu/6.824/labs/raft-locking.txt">locking</a> 和 <a href="https://thesquareplanet.com/blog/students-guide-to-raft/">guide</a> 页面。</li>
+</ul>
+<p>如果代码运行太慢，那么即将进行的 Lab 的测试可能会使代码失败。您可以使用time 命令检查解决方案使用的实时时间和 CPU 时间。以下是典型输出：</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">$ time <span class="keyword">go</span> test -run <span class="number">2</span>B</span><br><span class="line">Test (<span class="number">2</span>B): basic agreement ...</span><br><span class="line">  ... Passed --   <span class="number">1.6</span>  <span class="number">3</span>   <span class="number">18</span>    <span class="number">5158</span>    <span class="number">3</span></span><br><span class="line">Test (<span class="number">2</span>B): RPC <span class="keyword">byte</span> count ...</span><br><span class="line">  ... Passed --   <span class="number">3.3</span>  <span class="number">3</span>   <span class="number">50</span>  <span class="number">115122</span>   <span class="number">11</span></span><br><span class="line">Test (<span class="number">2</span>B): agreement despite follower disconnection ...</span><br><span class="line">  ... Passed --   <span class="number">6.3</span>  <span class="number">3</span>   <span class="number">64</span>   <span class="number">17489</span>    <span class="number">7</span></span><br><span class="line">Test (<span class="number">2</span>B): no agreement <span class="keyword">if</span> too many followers disconnect ...</span><br><span class="line">  ... Passed --   <span class="number">4.9</span>  <span class="number">5</span>  <span class="number">116</span>   <span class="number">27838</span>    <span class="number">3</span></span><br><span class="line">Test (<span class="number">2</span>B): concurrent Start()s ...</span><br><span class="line">  ... Passed --   <span class="number">2.1</span>  <span class="number">3</span>   <span class="number">16</span>    <span class="number">4648</span>    <span class="number">6</span></span><br><span class="line">Test (<span class="number">2</span>B): rejoin of partitioned leader ...</span><br><span class="line">  ... Passed --   <span class="number">8.1</span>  <span class="number">3</span>  <span class="number">111</span>   <span class="number">26996</span>    <span class="number">4</span></span><br><span class="line">Test (<span class="number">2</span>B): leader backs up quickly over incorrect follower logs ...</span><br><span class="line">  ... Passed --  <span class="number">28.6</span>  <span class="number">5</span> <span class="number">1342</span>  <span class="number">953354</span>  <span class="number">102</span></span><br><span class="line">Test (<span class="number">2</span>B): RPC counts aren<span class="string">&#x27;t too high ...</span></span><br><span class="line"><span class="string">  ... Passed --   3.4  3   30    9050   12</span></span><br><span class="line"><span class="string">PASS</span></span><br><span class="line"><span class="string">ok      raft    58.142s</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">real    0m58.475s</span></span><br><span class="line"><span class="string">user    0m2.477s</span></span><br><span class="line"><span class="string">sys     0m1.406s</span></span><br><span class="line"><span class="string">$</span></span><br></pre></td></tr></table></figure>
+
+<p>“ok raft 58.142s” 表示 Go 测量的 2B 测试所用时间为实际（挂钟）时间的 58.142 秒。</p>
+<p>“user 0m2.477s” 意味着代码消耗了 2.477 秒的 CPU 时间，或者实际执行指令所花费的时间（而不是等待或休眠）。</p>
+<p>如果您的解决方案在 2B 测试中使用的实时时间远远超过 1 分钟，或者 CPU 时间超过 5 秒，那么以后可能会遇到麻烦。查找用于睡眠或等待 RPC 超时的时间、在不休眠或等待条件或通道消息的情况下运行的循环，或发送的大量 RPCs。</p>
+<h2 id="Part-2C"><a href="#Part-2C" class="headerlink" title="Part 2C"></a>Part 2C</h2><p>如果基于 Raft 的服务器重新启动，它应该在停止的地方恢复服务。这需要 Raft 保持持续状态，以便在重新启动后仍然存在。论文的图 2 提到了哪个状态应该是持久的。</p>
+<p>真正的实现会在 Raft 每次更改时将其持久状态写入磁盘，并在 reboot 后 restarting 时从磁盘读取状态。您的实现不会使用磁盘；相反，它将从 <code>Persister</code> 对象保存和恢复持久状态（请参见 <code>persister.go</code>）。调用 <code>Raft.Make()</code> 将提供一个  <code>Persister</code>，该持久器最初保持 <code>Raft</code> 最近的持久化状态（如果有的话）。Raft 应该从那个  <code>Persister</code> 初始化它的状态，并且应该在每次状态改变时使用它来保存它的持久状态。使用 <code>Persister</code> 的<code>ReadRaftState（）</code> 和 <code>SaveRaftState（）</code> 方法。</p>
+<p>TASK：完成 <code>raft.go</code> 中的 <code>persist()</code> 和 <code>readPersist()</code> ，通过添加代码来保存和恢复持久状态。您需要将状态编码（或“序列化”）为字节数组，以便将其传递给 <code>Persister</code>。使用 <code> labgob</code> 编码器；请参阅 <code>persist（）</code> 和<code> readPersist（）</code> 中的注释。<code>labgob</code> 类似于 Go 的 <code>gob</code> 编码器，但是如果您试图用小写字段名对结构进行编码，则会打印错误消息。</p>
+<p>TASK：在实现更改持久状态的点插入对 <code>persist()</code> 的调用。一旦你完成了这项工作，你就应该通过剩下的测试了。</p>
+<p>Note：为了避免内存耗尽，Raft 必须定期丢弃旧的日志条目，但是在下一个 Lab 之前，您不必担心这个问题。</p>
+<ul>
+<li>Hints：运行 <code>git pull</code> 获取最新的实验室软件。</li>
+<li>Hints：许多 2C 测试涉及服务器故障和网络丢失 RPC 请求或响应。</li>
+<li>Hints：您可能需要一次通过多个条目备份 nextIndex 的优化。从第7页的底部和第8页的顶部（用灰色线标记）查看 <a href="https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf">extended Raft paper</a> 。论文在细节上含糊其辞，你需要填补空白，也许需要借助 6.824 的 Raft 讲座。</li>
+<li>Hints：全套 Lab 2 测试（2A+2B+2C）的合理时间消耗是 4 分钟的实时时间和 1 分钟的CPU时间。</li>
+</ul>
+<p>您的代码应该通过所有 2C 测试（如下所示），以及 2A 和 2B 测试。</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">$ <span class="keyword">go</span> test -run <span class="number">2</span>C</span><br><span class="line">Test (<span class="number">2</span>C): basic persistence ...</span><br><span class="line">  ... Passed --   <span class="number">7.2</span>  <span class="number">3</span>  <span class="number">206</span>   <span class="number">42208</span>    <span class="number">6</span></span><br><span class="line">Test (<span class="number">2</span>C): more persistence ...</span><br><span class="line">  ... Passed --  <span class="number">23.2</span>  <span class="number">5</span> <span class="number">1194</span>  <span class="number">198270</span>   <span class="number">16</span></span><br><span class="line">Test (<span class="number">2</span>C): partitioned leader and one follower crash, leader restarts ...</span><br><span class="line">  ... Passed --   <span class="number">3.2</span>  <span class="number">3</span>   <span class="number">46</span>   <span class="number">10638</span>    <span class="number">4</span></span><br><span class="line">Test (<span class="number">2</span>C): Figure <span class="number">8</span> ...</span><br><span class="line">  ... Passed --  <span class="number">35.1</span>  <span class="number">5</span> <span class="number">9395</span> <span class="number">1939183</span>   <span class="number">25</span></span><br><span class="line">Test (<span class="number">2</span>C): unreliable agreement ...</span><br><span class="line">  ... Passed --   <span class="number">4.2</span>  <span class="number">5</span>  <span class="number">244</span>   <span class="number">85259</span>  <span class="number">246</span></span><br><span class="line">Test (<span class="number">2</span>C): Figure <span class="number">8</span> (unreliable) ...</span><br><span class="line">  ... Passed --  <span class="number">36.3</span>  <span class="number">5</span> <span class="number">1948</span> <span class="number">4175577</span>  <span class="number">216</span></span><br><span class="line">Test (<span class="number">2</span>C): churn ...</span><br><span class="line">  ... Passed --  <span class="number">16.6</span>  <span class="number">5</span> <span class="number">4402</span> <span class="number">2220926</span> <span class="number">1766</span></span><br><span class="line">Test (<span class="number">2</span>C): unreliable churn ...</span><br><span class="line">  ... Passed --  <span class="number">16.5</span>  <span class="number">5</span>  <span class="number">781</span>  <span class="number">539084</span>  <span class="number">221</span></span><br><span class="line">PASS</span><br><span class="line">ok      raft    <span class="number">142.357</span>s</span><br><span class="line">$ </span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+
+]]></content>
+      <categories>
+        <category>分布式</category>
+      </categories>
+      <tags>
+        <tag>MIT 6.824</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title></title>
+    <url>/2020/12/03/6.824-lab4/</url>
+    <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>在本 Lab 中，您将构建一个 K/V 存储系统，它将 key “shards” 或分区到一组副本上。shard 是 K/V 对的子集；例如，所有以 “a” 开头的键可能是一个 shard，所有以 “b” 开头的键可能是另一个 shard，等等。切分的原因是性能。每个副本组只处理几个 shard 的 put 和 get，并且这些组并行操作；因此，总的系统吞吐量（单位时间的投入和获得）与组的数量成比例地增加。</p>
+<a id="more"></a>
+
+<p>你的 sharded key/value store 有两个主要组件。首先，一组副本组。每个副本组负责 shards 的一个子集。一个副本由几个服务器组成，这些服务器使用 Raft 来复制组的 shards。第二个组件是 “shard master”。shard master 决定哪个副本组应该为每个 shard 提供服务；这个信息称为配置。配置会随着时间而变化。客户机咨询shard master 以找到 key 的副本组，而 replica group 则咨询 master 以找出要服务的 shard。整个系统只有一个 shard master，使用 Raft 实现容错服务。</p>
+<p>分片存储系统必须能够在副本组之间移动 shards。一个原因是某些组可能比其他组负载更大，因此需要移动 shards 来平衡负载。另一个原因是副本组可能加入和退出系统：可能会添加新的副本组以增加容量，或者现有副本组可能会脱机进行修复或退役。</p>
+<p>这个 Lab 的主要挑战是处理重新配置——改变分配给组的 shards。在单个副本组中，所有组成员必须就何时发生相对于客户端 Put/Append/Get 请求的重新配置达成一致。例如，一个 Put 可能与导致副本组不再负责持有 Put 密钥的 shard 的重新配置的时间相同。组中的所有副本都必须就 Put 发生在重新配置之前还是之后达成一致。如果在之前，Put 应该生效，并且 shard 的新所有者将看到它的效果；如果在之后，Put 将不生效，客户端必须重新尝试新所有者。建议的方法是让每个副本组使用 Raft 不仅记录 put、Appends 和 Get的序列，还记录重新配置的序列。您需要确保在任何时候最多有一个副本组为每个 shards 提供请求。</p>
+<p>重新配置还需要副本组之间的交互。例如，在配置 10 中，组 G1 可能负责碎片 S1。在配置11中，组 G2 可能负责碎片 S1。在从 10 到 11 的重新配置过程中，G1 和 G2 必须使用 RPC 将 shard S1（键/值对）的内容从 G1 移动到 G2。</p>
+<h3 id="Note"><a href="#Note" class="headerlink" title="Note:"></a>Note:</h3><ol>
+<li>只有 RPC 可用于客户端和服务器之间的交互。例如，不允许服务器的不同实例共享 Go 变量或文件。</li>
+<li>这个 Lab 使用 “configuration” 来指给副本组分配 shards。这与 Raft 集群成员身份更改不同。您不必实现 Raft 集群成员身份更改。</li>
+</ol>
+<p>这个 Lab 的通用体系结构（一个配置服务和一组副本组）遵循与 Flat Datacenter Storage、BigTable、Spanner、FAWN、ApacheHBase、Rosebud、Spinnaker 和许多其他应用程序相同的通用模式。不过，这些系统在许多细节上与本 Lab 不同，而且通常也更加复杂和功能强大。例如，Lab 不会进化出每个 Raft 中的 peers 集合；它的数据和查询模型非常简单；而且 shards 的切换很慢，不允许并发的客户端访问。</p>
+<h3 id="Note-1"><a href="#Note-1" class="headerlink" title="Note:"></a>Note:</h3><p>Your Lab 4 sharded server, Lab 4 shard master, and Lab 3 kvraft must all use the same Raft implementation.  We will re-run the Lab 2 and Lab 3 tests as part of grading Lab 4, and your score on the older tests will count towards your total Lab 4 grade. <strong>These tests are worth 10 points out of your overall Lab 4 grade.</strong></p>
+<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><p>我们为您提供 <code>src/shardmaster</code> 和 <code>src/shardkv</code> 中的框架代码和测试。</p>
+<p>要启动并运行，请执行以下命令：</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">$ cd ~/<span class="number">6.824</span></span><br><span class="line">$ git pull</span><br><span class="line">...</span><br><span class="line">$ cd src/shardmaster</span><br><span class="line">$ <span class="keyword">go</span> test</span><br><span class="line">--- FAIL: TestBasic (<span class="number">0.00</span>s)</span><br><span class="line">        test_test.<span class="keyword">go</span>:<span class="number">11</span>: wanted <span class="number">1</span> groups, got <span class="number">0</span></span><br><span class="line">FAIL</span><br><span class="line">exit status <span class="number">1</span></span><br><span class="line">FAIL    shardmaster     <span class="number">0.008</span>s</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
+
+<p>完成后，您的实现应该通过 <code>src/shardmaster </code>目录中的所有测试，以及 <code>src/shardkv</code> 中的所有测试。 </p>
+<h2 id="Part-A-The-Shard-Master"><a href="#Part-A-The-Shard-Master" class="headerlink" title="Part A: The Shard Master"></a>Part A: The Shard Master</h2><p>首先实现 <code>shardmaster/server.go</code> 和  <code>client.go</code>  中的 shard master。完成后，您应该通过 <code>shardmaster</code> 目录中的所有测试：</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">$ cd ~/<span class="number">6.824</span>/src/shardmaster</span><br><span class="line">$ <span class="keyword">go</span> test</span><br><span class="line">Test: Basic leave/join ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: Historical queries ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: Move ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: Concurrent leave/join ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: Minimal transfers after joins ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: Minimal transfers after leaves ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: Multi-group join/leave ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: Concurrent multi leave/join ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: Minimal transfers after multijoins ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: Minimal transfers after multileaves ...</span><br><span class="line">  ... Passed</span><br><span class="line">PASS</span><br><span class="line">ok  	shardmaster	<span class="number">13.127</span>s</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
+
+<p>shardmaster 管理一系列已编号的配置。每个配置描述了一组副本组和一个分配给副本组的 shards。每当需要更改此分配时，shard master 将使用新分配创建一个新配置。当 key/value 客户端和服务器想知道当前（或过去）配置时，请与shardmaster联系。</p>
+<p>您的实现必须支持 <code>shardmaster/common.go</code> 中描述的 RPC 接口，它由 <code>Join</code>、<code>Leave</code>、<code>Move</code> 和 <code>Query </code> 等 RPCs 组成。这些 RPCs 旨在允许管理员（和测试）控制 shardmaster：添加新的副本组、消除副本组以及在副本组之间移动 shards。</p>
+<p>管理员使用 <code>Join</code> RPC 添加新的副本组。它的参数是从唯一的非零副本组标识符（GID）到服务器名称列表的一组映射。shardmaster 应该通过创建包含新副本组的新配置来做出反应。新的配置应该尽可能均匀地将 shards 分配到全组中，并且应该移动尽可能少的 shards 来实现这个目标。如果 GID 不是当前配置的一部分，shardmaster应该允许重用 GID（即 GID 应该被允许加入，然后离开，然后再次加入）。</p>
+<p><code>Leave</code>RPC 的参数是以前加入的组的 gid 列表。shardmaster 应该创建一个不包含这些组的新配置，并将这些组的 shards 分配给其余的组。新的配置应该尽可能均匀地在组中划分 shards，并且应该移动尽可能少的 shards 来实现这个目标。</p>
+<p><code>Move</code> RPC的参数是一个 shard number 和一个 GID。shardmaster 应该创建一个新的配置，其中 shards 被分配给组。Move 的目的是让我们测试您的软件。A <code>Join</code> or <code>Leave</code> following a <code>Move</code> will likely un-do the <code>Move</code>, since <code>Join</code> and <code>Leave</code> re-balance.</p>
+<p> <code>Query</code> RPC的参数是一个配置号。shardmaster 使用具有该编号的配置进行答复。如果这个数字是 -1 或大于已知的最大配置号，shardmaster 应该用最新的配置进行答复。 <code>Query(-1)</code> 的结果应反映 shardmaster 在收到 <code>Query(-1)</code> RPC 之前完成的每个 <code>Join</code>、<code>Leave</code> 或 <code>Move</code> RPC。</p>
+<p>第一个配置应该编号为零。它不应该包含任何组，所有 shards 都应该分配给 GID zero（无效的 GID）。下一个配置（响应 <code>Join</code> RPC 创建）应该编号为 1，&amp;c。通常会有比组更多的 shards（即，每个组将服务于多个 shards），以便可以以相当精细的粒度转移负载。</p>
+<h3 id="TASK"><a href="#TASK" class="headerlink" title="TASK"></a>TASK</h3><p>您的任务是在 <code>shardmaster/</code> 目录的  <code>client.go</code> 以及 <code>server.go</code> 中实现上面指定的接口 。你的 shardmaster 必须是容错的，使用 Lab 2/3的 Raft 库。请注意，我们将在对 Lab 4 进行评分时重新运行  Lab2 和 3 的测试，因此请确保不要在Raft 实现中引入 bug。通过 <code>shardmaster/</code> 中的所有测试后，您就完成了此任务。</p>
+<h3 id="Hint-1"><a href="#Hint-1" class="headerlink" title="Hint 1:"></a>Hint 1:</h3><p>从 kfraft 服务器的精简副本开始。</p>
+<h3 id="Hint-2"><a href="#Hint-2" class="headerlink" title="Hint 2:"></a>Hint 2:</h3><p>您应该为 shard master 的 RPCs 实现重复客户端请求检测。shard master 测试不会测试这个，但是 shardkv 测试稍后会在一个不可靠的网络上使用 shard master；如果你的 shard master 没有过滤出重复的rpc，你可能很难通过shardkv测试。</p>
+<h3 id="Hint-3"><a href="#Hint-3" class="headerlink" title="Hint 3:"></a>Hint 3:</h3><p>Go maps are references.</p>
+<p>如果将 map 类型的一个变量分配给另一个变量，则两个变量引用同一个映射。因此，如果您想在前一个配置的基础上创建一个新的配置，您需要创建一个新的 map对象（使用make（）），并分别复制键和值。</p>
+<h3 id="Hint-4"><a href="#Hint-4" class="headerlink" title="Hint 4:"></a>Hint 4:</h3><p>The Go race detector (go test -race) may help you find bugs.</p>
+<h2 id="Part-B-Sharded-Key-Value-Server"><a href="#Part-B-Sharded-Key-Value-Server" class="headerlink" title="Part B: Sharded Key/Value Server"></a>Part B: Sharded Key/Value Server</h2><p> **Important:**Do a <code>git pull</code> to get the latest lab software.</p>
+<p>现在您将构建 shardkv，一个分片容错密钥/值存储系统。You’ll modify <code>shardkv/client.go</code>, <code>shardkv/common.go</code>, and <code>shardkv/server.go</code>.</p>
+<p>每个 shardkv 服务器都作为副本组的一部分运行。每个副本组为一些 key-space  shards 提供 <code>Get</code>、<code>Put</code> 和 <code>Append</code> 操作。使用 <code>client.go</code> 中的 <code>key2shard()</code> 找到 key 属于哪一个 shard。多个副本组合作为完整的 shards 集提供服务。shard master 服务的单个实例将 shards 分配给副本组；当这个分配发生变化时，副本组必须相互传递 shards，同时确保客户端不会看到不一致的响应。</p>
+<p>存储系统必须为使用其客户端接口的应用程序提供可线性化的接口。也就是说， <code>shardkv/client.go</code>  的 <code>Clerk.Get()</code>, <code>Clerk.Put()</code>, and <code>Clerk.Append()</code>  方法被已完成的应用程序调用必须以相同的顺序影响所有副本。 <code>Clerk.Get()</code> 应该看到最近的 <code>Put</code>/<code>Append</code> 写入同一个键的值。即使在 <code>Gets</code> 和 <code>Puts</code> 在配置更改的同时到达，这也必须是真的。</p>
+<p>只有当 shards 的 Raft 副本组中的大多数服务器处于活动状态并且可以相互通信，并且可以与大多数 shard master 服务器通信时，才需要每个 shard 取得进展。即使某些副本组中的少数服务器死机、暂时不可用或速度慢，您的实现也必须运行（服务请求并能够根据需要重新配置）。</p>
+<p>shardkv 服务器仅是单个副本组的成员。给定副本组中的服务器集永远不会更改。</p>
+<p>我们为您提供  <code>client.go</code>  将每个 RPC 发送到负责 RPC 密钥的副本组的代码。如果副本组说它不负责密钥，它会重新尝试；在这种情况下，客户机代码向 shard  master 请求最新配置并重试。你得修改一下 <code>client.go</code> 作为处理重复客户机 RPCs 支持的一部分，就像 kvraft Lab 中一样。</p>
+<p>完成后，代码应通过除挑战测试以外的所有 shardkv 测试：</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">$ cd ~/<span class="number">6.824</span>/src/shardkv</span><br><span class="line">$ <span class="keyword">go</span> test</span><br><span class="line">Test: static shards ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: join then leave ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: snapshots, join, and leave ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: servers miss configuration changes...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: concurrent puts and configuration changes...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: more concurrent puts and configuration changes...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: unreliable <span class="number">1.</span>..</span><br><span class="line">  ... Passed</span><br><span class="line">Test: unreliable <span class="number">2.</span>..</span><br><span class="line">  ... Passed</span><br><span class="line">Test: shard deletion (challenge <span class="number">1</span>) ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: concurrent configuration change and restart (challenge <span class="number">1</span>)...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: unaffected shard access (challenge <span class="number">2</span>) ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: partial migration shard access (challenge <span class="number">2</span>) ...</span><br><span class="line">  ... Passed</span><br><span class="line">PASS</span><br><span class="line">ok  	shardkv	<span class="number">206.132</span>s</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
+
+<p>**Note:**你的服务器不会调用 shard master 的<code>Join()</code> 。测试人员将在适当的时候调用<code>Join()</code> 。</p>
+<h3 id="Task-1"><a href="#Task-1" class="headerlink" title="Task 1:"></a>Task 1:</h3><p>你的第一个任务就是通过第一次 shardkv 测试。在这个测试中，只有一个 shards 分配，所以您的代码应该非常类似于您的 lab3 服务器的代码。最大的修改是让您的服务器检测配置何时发生，并开始接受 keys 与它现在拥有的 shards 匹配的请求。</p>
+<p>现在解决这个问题的方法是静态的。您需要让您的服务器监视配置更改，并在检测到配置更改时启动 shards 迁移过程。如果一个副本组丢失了一个 shard，它必须立即停止向该 shard 中的密钥提供请求，并开始将该 shard 的数据迁移到正在接管所有权的副本组。如果一个副本组获得了一个 shard，它需要等待前一个所有者发送旧的 shard 数据，然后才能接受对该 shard 的请求。</p>
+<h3 id="Task-2"><a href="#Task-2" class="headerlink" title="Task 2:"></a>Task 2:</h3><p>在配置更改期间实现 shrads 迁移。请确保副本组中的所有服务器在执行操作序列的同一点执行迁移，以便它们都接受或拒绝并发客户端请求。在进行后面的测试之前，您应该专注于通过第二个测试（“join then leave””）。当您通过所有测试到<code>TestDelete</code>（但不包括 <code>TestDelete</code>）时，您就完成了此任务。</p>
+<p><strong>Note：</strong></p>
+<p>您的服务器需要定期轮询 shard master 以了解新的配置。测试预计你的代码大约每 100 毫秒轮询一次；更多的频率是可以的，但是很少的频率可能会引起问题。</p>
+<p><strong>Note：</strong></p>
+<p>服务器需要互相发送 RPCs，以便在配置更改期间传输 shards。shard master 的<code>Config</code> 结构包含服务器名称，但是需要一个 <code>labrpc.ClientEnd</code> 以发送RPC。您应该使用传递给 <code>StartServer()</code> 的 <code>make_end()</code> 函数将服务器名转换为 <code>ClientEnd</code>。<code>shardkv/client.go</code>  包含执行此操作的代码。</p>
+<h3 id="Hint-1-1"><a href="#Hint-1-1" class="headerlink" title="Hint 1:"></a>Hint 1:</h3><p>添加代码到 <code>server.go</code> 以便定期从 shard master 获取最新配置，并添加代码以拒绝客户端请求（如果接收组不负责客户端密钥的 shards）。你还是应该通过第一次 test。</p>
+<h3 id="Hint-2-1"><a href="#Hint-2-1" class="headerlink" title="Hint 2:"></a>Hint 2:</h3><p>您的服务器应该用 <code>ErrWrongGroup</code> 错误响应服务器不负责的 key（即，对于一个没有分配给服务器组的 key）的客户端RPC。确保 <code>Get</code>、<code>Put</code> 和 <code>Append</code> 处理程序在并发重新配置时正确地做出了这个决定。</p>
+<h3 id="Hint-3-1"><a href="#Hint-3-1" class="headerlink" title="Hint 3:"></a>Hint 3:</h3><p>按顺序一次重新配置一个。</p>
+<h3 id="Hint-4-1"><a href="#Hint-4-1" class="headerlink" title="Hint 4:"></a>Hint 4:</h3><p>如果测试失败，检查 gob 错误（例如“gob:type not registered for interface…”）。Go 不认为 gob 错误是致命的，尽管它们对实 Lab 是致命的。</p>
+<h3 id="Hint-5"><a href="#Hint-5" class="headerlink" title="Hint 5:"></a>Hint 5:</h3><p>您最多需要为跨 shard 移动的客户端请求提供一次语义（重复检测）。</p>
+<h3 id="Hint-6"><a href="#Hint-6" class="headerlink" title="Hint 6:"></a>Hint 6:</h3><p>考虑一下 <code>shardkv</code> 客户机和服务器应该如何处理 <code>ErrWrongGroup</code>。如果客户机收到 <code>ErrWrongGroup</code>，是否应该更改序列号？如果服务器在执行 <code>Get</code> / <code>Put</code> 请求时返回 <code>ErrWrongGroup</code> ，是否应该更新客户端状态？</p>
+<h3 id="Hint-7"><a href="#Hint-7" class="headerlink" title="Hint 7:"></a>Hint 7:</h3><p>在服务器转移到一个新的配置之后，它可以继续存储它不再拥有的 shard（尽管这在实际系统中是令人遗憾的）。这可能有助于简化服务器实现。</p>
+<h3 id="Hint-8"><a href="#Hint-8" class="headerlink" title="Hint 8:"></a>Hint 8:</h3><p>当 G1 组在配置更改期间需要 G2 的 shard 时，G2 在处理日志条目的过程中的什么时候将 shard 发送给 G1 有关系吗？</p>
+<h3 id="Hint-9"><a href="#Hint-9" class="headerlink" title="Hint 9:"></a>Hint 9:</h3><p>您可以在 RPC 请求或回复中发送整个映射，这可能有助于保持 shards 传输代码的简单性。</p>
+<h3 id="Hint-10"><a href="#Hint-10" class="headerlink" title="Hint 10:"></a>Hint 10:</h3><p>如果您的一个 RPC 处理程序在它的回复中包含一个 map（例如，一个键/值 map），这是服务器状态的一部分，那么您可能会因为争用而出现 bug。RPC 系统必须读取映射才能将其发送给调用方，但是它没有持有覆盖 map 的锁。但是，您的服务器可能会在 RPC 系统读取该 map 时继续修改它。解决方案是让 RPC 处理程序在回复中包含 map 的副本。</p>
+<h3 id="Hint-11"><a href="#Hint-11" class="headerlink" title="Hint 11:"></a>Hint 11:</h3><p>如果您在 Raft 日志条目中放置了一个 map 或 slice，那么您的 key/value 服务器随后会在 applyCh 上看到该条目，并在 key/value 服务器的状态下保存对该 map/slice 的引用，那么您可能会有 race。</p>
+<h3 id="Hint-12"><a href="#Hint-12" class="headerlink" title="Hint 12:"></a>Hint 12:</h3><p>在配置更改期间，一对组可能需要在它们之间的两个方向上移动 shards。如果您看到死锁，这是一个可能的来源。</p>
+<h2 id="No-credit-challenge-exercises"><a href="#No-credit-challenge-exercises" class="headerlink" title="No-credit challenge exercises"></a>No-credit challenge exercises</h2><p>如果您要构建这样一个用于生产的系统，这两个特性将是必不可少的。</p>
+<h3 id="Garbage-collection-of-state"><a href="#Garbage-collection-of-state" class="headerlink" title="Garbage collection of state"></a>Garbage collection of state</h3><p>当一个副本组失去一个 shards 的所有权时，该副本组应该从其数据库中删除它丢失的密钥。对于它来说，保留它不再拥有、不再为请求提供服务的 values 是浪费。然而，这给迁移带来了一些问题。假设我们有两个组，G1 和 G2，有一个新的配置 C 将碎片从 G1 移到 G2。如果 G1 在转换到 C 时从其数据库中删除 S 中的所有键，G2 在试图移动到 C 时如何获得 S 的数据？</p>
+<h4 id="Chanllege"><a href="#Chanllege" class="headerlink" title="Chanllege"></a>Chanllege</h4><p>使每个副本组保留旧 shards 的时间不超过绝对必要的时间。即使像上面的 G1 这样的副本组中的所有服务器崩溃，然后重新启动，您的解决方案也必须工作。如果您通过了 <code>TestChallenge1Delete</code> 和 <code>TestChallenge1Concurrent</code>，则您已完成此挑战。</p>
+<h3 id="Client-requests-during-configuration-changes"><a href="#Client-requests-during-configuration-changes" class="headerlink" title="Client requests during configuration changes"></a>Client requests during configuration changes</h3><p>处理配置更改的最简单方法是在转换完成之前禁止所有客户端操作。虽然概念简单，但这种方法在生产级系统中不可行；当机器被带入或取出时，它会导致所有客户机长时间的暂停。最好继续提供不受正在进行的配置更改影响的碎片。</p>
+<h4 id="Chanllege-1"><a href="#Chanllege-1" class="headerlink" title="Chanllege"></a>Chanllege</h4><p>修改您的解决方案，以便在配置更改期间继续执行未受影响的 shards 中的密钥的客户端操作。当您未受影响地通过 <code>TestChallenge2</code> 时，您已完成此挑战。</p>
+<p>虽然上面的优化是好的，我们仍然可以做得更好。假设某个副本组 G3 在转换到 C时，需要 G1 的 shard S1 和 G2 的 shard S2。我们真的希望 G3 在收到必要的状态后立即开始服务一个 shard，即使它还在等待其他 shard。例如，如果 G1 关闭，G3 在从 G2 接收到适当的数据后，应该仍然开始为 S2 服务请求，尽管到 C 的转换还没有完成。</p>
+<h4 id="Chanllege-2"><a href="#Chanllege-2" class="headerlink" title="Chanllege"></a>Chanllege</h4><p>修改您的解决方案，以便副本组能够立即开始提供 shards，即使配置仍在进行中。当您通过 <code>TestChallenge2Partial</code> 时，您已完成此挑战。</p>
+]]></content>
+      <categories>
+        <category>分布式</category>
+      </categories>
+      <tags>
+        <tag>MIT 6.824</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Lab 2：内存管理</title>
-    <url>/2020/12/02/lab2/</url>
+    <url>/2020/12/02/6.828-lab2/</url>
     <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>为操作系统编写内存管理代码。内存管理包含两个组件。</p>
 <p>第一个组件是内核的 <em>物理内存分配器</em>，以便内核可以分配和释放内存。分配器以 4096 字节为单位操作，称为 <em>pages</em>。任务是维护数据结构，该数据结构记录哪些物理页是空闲的，哪些已分配的，以及有多少个进程共享每个分配的页。还将编写例程来分配和释放内存页面。</p>
 <p>内存管理的第二个组件是 <em>虚拟内存</em>，它将内核和用户软件使用的虚拟地址映射到物理内存中的地址。当指令使用内存时，x86 硬件的内存管理单元（MMU）执行映射。根据提供的规范修改 JOS 以设置 MMU 的页表。</p>
@@ -169,10 +493,13 @@
       <categories>
         <category>操作系统</category>
       </categories>
+      <tags>
+        <tag>MIT 6.828</tag>
+      </tags>
   </entry>
   <entry>
     <title>Lab 5: 文件系统</title>
-    <url>/2020/12/02/lab5/</url>
+    <url>/2020/12/02/6.828-lab5/</url>
     <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>在这个实验中，您将实现 spawn，一个加载并在磁盘可执行文件上运行的库调用。然后，您将充实您的内核和库操作系统，足以在控制台上运行 shell。这些特性需要一个文件系统，本实验室介绍了一个简单的 读/写 文件系统。</p>
 <h1 id="File-system-preliminaries"><a href="#File-system-preliminaries" class="headerlink" title="File system preliminaries"></a>File system preliminaries</h1><p>您将使用的文件系统比大多数 “真实” 的文件系统（包括 xv6 unix）简单得多，但它的功能足以提供基本功能：创建、读取、写入和删除以分层目录结构组织的文件。</p>
 <p>我们目前（无论如何）只开发一个单用户操作系统，它提供足够的保护来捕捉错误，但不能保护多个相互怀疑的用户。因此，我们的文件系统不支持 UNIX 文件所有权或权限的概念。我们的文件系统目前也不支持硬链接、符号链接、时间戳或像大多数 UNIX 文件系统那样的特殊设备文件。</p>
@@ -280,10 +607,13 @@
       <categories>
         <category>操作系统</category>
       </categories>
+      <tags>
+        <tag>MIT 6.828</tag>
+      </tags>
   </entry>
   <entry>
     <title>Lab 3：用户环境</title>
-    <url>/2020/12/02/lab3/</url>
+    <url>/2020/12/02/6.828-lab3/</url>
     <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>在此 lab 中，您将实现运行受保护的用户模式环境（即”进程”）所需的基本内核功能。您将增强 JOS 内核以设置数据结构来跟踪用户环境、创建单个用户环境、将程序映像加载到其中，并启动运行。您还将使 JOS 内核能够处理用户环境进行的任何系统调用并处理它导致的任何其他异常。</p>
 <p><strong>Note：</strong>在此实验中，术语 <em>environment</em> 和 <em>process</em> 是可互换的 - 两者都指允许您运行程序的抽象。我们引入术语 “<em>environment</em>“ 而不是传统术语 “<em>process</em>“，以强调 JOS 环境和 UNIX 进程提供不同接口，并且不提供相同的语义。</p>
 <a id="more"></a>
@@ -503,10 +833,13 @@
       <categories>
         <category>操作系统</category>
       </categories>
+      <tags>
+        <tag>-MIT 6.828</tag>
+      </tags>
   </entry>
   <entry>
     <title>Lab 6: 网络驱动</title>
-    <url>/2020/12/02/lab6/</url>
+    <url>/2020/12/02/6.828-lab6/</url>
     <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>本 Lab 是你可以自己进行的最后一个项目。</p>
 <p>现在你有了一个文件系统，任何一个有自尊的操作系统都不应该没有网络堆栈。在这个 Lab 中，你要写一个网络接口卡的驱动程序。该卡将基于 Intel 82540EM 芯片，也称为 E1000。</p>
 <p>然而，网卡驱动程序不足以让你的操作系统连接到互联网上。在新的 lab 6 代码中，我们为您提供了一个网络堆栈和一个网络服务器。与以前的实验一样，使用 git 获取这个实验的代码，合并到您自己的代码中，并研究新 net/ 目录中的内容，以及 kern/ 中的新文件。</p>
@@ -669,10 +1002,13 @@
       <categories>
         <category>操作系统</category>
       </categories>
+      <tags>
+        <tag>MIT 6.828</tag>
+      </tags>
   </entry>
   <entry>
     <title>Lab 4: 抢占式多任务调度</title>
-    <url>/2020/12/02/lab4/</url>
+    <url>/2020/12/02/6.828-lab4/</url>
     <content><![CDATA[<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>在此 Lab 中，您将在多个同时处于活动状态的用户模式环境中实现抢占式多任务处理。</p>
 <p>在 A 部分中，您将向 JOS 添加多处理器支持，实现循环调度，并添加基本环境管理系统调用（创建和销毁环境的调用，以及分配/映射内存）。</p>
 <p>在 B 部分中，您将实现一个像 Unix 一样 fork()，它允许用户模式环境创建自己的副本。</p>
@@ -921,5 +1257,8 @@
       <categories>
         <category>操作系统</category>
       </categories>
+      <tags>
+        <tag>MIT 6.828</tag>
+      </tags>
   </entry>
 </search>
