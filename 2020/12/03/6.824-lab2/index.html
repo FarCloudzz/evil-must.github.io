@@ -619,8 +619,23 @@
 
   
     <div class="comments" id="comments">
+    <script>
+      window.onload = function(){
+        var valine = new Valine();
+        valine.init({
+          el: '#vcomments',
+          appId: "<%= theme.v_appId %>",
+          appKey: "<%= theme.v_appKey %>",
+          path: window.location.pathname,
+          placeholder: "你是我一生只会遇见一次的惊喜 ...",
+          avatar:'wavatar', //用不同面孔和背景组合生成的头像
+          notify: true, // 邮件提醒!!!
+          verify: true, // 验证码
+          })
+      }
+    </script>
     </div>
-  
+    
 
 
 
@@ -995,8 +1010,8 @@
         verify: true,
         notify: true,
         appId: 'y8UDCfGVDHBgEMFSGqOzHUwq-gzGzoHsz',
-        appKey: 'rWYiG4yjCtJ6Hd9eJegMbUgs',
-        placeholder: '没有独立思想的世界没有自由',
+        appKey: 'y8UDCfGVDHBgEMFSGqOzHUwq-gzGzoHsz',
+        placeholder: '没有独立思想的世界没有自由 (记得加上 https 哦:)',
         avatar:'mm',
         guest_info:guest,
         pageSize:'10' || 10,
