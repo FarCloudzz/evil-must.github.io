@@ -226,9 +226,12 @@
       </tags>
   </entry>
   <entry>
-    <title></title>
+    <title>内存管理</title>
     <url>/2020/12/10/LAB%202%20%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/</url>
     <content><![CDATA[<p>回顾 828 的 Lab2，内存管理部分。</p>
+<p>回顾 828 的 Lab2，内存管理部分。</p>
+<p>接上篇，回顾 828 的 Lab2，内存管理部分。</p>
+<p>[内核启动](LAB 1 Booting a PC.md)</p>
 <a id="more"></a>
 
 <h2 id="从跳转到内核入口点开始"><a href="#从跳转到内核入口点开始" class="headerlink" title="从跳转到内核入口点开始"></a>从跳转到内核入口点开始</h2><h4 id="1-控制台初始化"><a href="#1-控制台初始化" class="headerlink" title="1 控制台初始化"></a>1 控制台初始化</h4><ol>
@@ -261,7 +264,7 @@
 </li>
 <li><p>初始化内存。首先找出机器有多少内存。</p>
 <pre><code>- physical memory : 128 MB
-- npages : 32K</code></pre>
+   - npages : 32K</code></pre>
 </li>
 </ol>
 <ol start="4">
