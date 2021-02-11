@@ -504,7 +504,7 @@
 <li>定时器环境</li>
 </ul>
 <p>下图显示了不同的环境及其关系。该图显示了包括设备驱动程序在内的整个系统，稍后将介绍。在这个实验中，你将实现用绿色突出显示的部分。</p>
-<p><img src="C:\Users\dier\Pictures\ns.png" class="lazyload" data-srcset="C:\Users\dier\Pictures\ns.png" srcset="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" alt="ns"></p>
+<p><img src="C:\Users\dier\Pictures\ns.png" alt="ns"></p>
 <h3 id="The-Core-Network-Server-Environment"><a href="#The-Core-Network-Server-Environment" class="headerlink" title="The Core Network Server Environment"></a>The Core Network Server Environment</h3><p>核心网络服务器环境由 socket 调用调度器和 lwIP 本身组成。socket 调用调度器的工作方式与文件服务器完全相同。用户环境使用 stubs（可以在 lib/nsipc.c 中找到）向核心网络环境发送 IPC 消息。如果你看 lib/nsipc.c，你会发现我们找到核心网络服务器的方式和找到文件服务器的方式是一样的：i386_init 用 NS_TYPE_NS 创建了 NS 环境，所以我们扫描 env，寻找这个特殊的环境类型。对于每个用户环境 IPC，网络服务器中的调度器代表用户调用 lwIP 提供的相应 BSD 套接字接口函数。</p>
 <p>常规用户环境不直接使用 nsipc_*  调用。相反，它们使用 lib/sockets.c 中的函数，该函数提供了一个基于文件描述符的 sockets API。因此，用户环境通过文件描述符引用套接字，就像它们在磁盘文件中引用的那样。许多操作（connect、accept等）都是特定于套接字的，但是读、写和关闭都要经过 lib/fd.c 中的普通文件描述符设备调度代码。就像文件服务器为所有打开的文件维护内部唯一 ID 一样，lwIP 也为所有打开的套接字生成唯一 ID。在文件服务器和网络服务器中，我们使用struct Fd 中存储的信息将每个环境的文件描述符映射到这些唯一的 ID 空间。</p>
 <p>尽管看起来文件服务器和网络服务器的 IPC 调度器的行为是相同的，但有一个关键的区别。像 accept 和 recv 这样的 BSD 套接字调用可以无限期地阻塞。如果调度程序让 lwIP 执行这些阻塞调用中的一个，那么调度程序也将阻塞，并且整个系统一次只能有一个未完成的网络调用。由于这是不可接受的，网络服务器使用用户级线程来避免阻塞整个服务器环境。对于每个传入的 IPC 消息，调度器创建一个线程并在新创建的线程中处理请求。如果线程阻塞，则只有该线程处于休眠状态，而其他线程继续运行。</p>
@@ -778,7 +778,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">15</span>
+                  <span class="site-state-item-count">17</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -789,7 +789,7 @@
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
-                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-count">2</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>
@@ -846,6 +846,10 @@
       
       
         <li class="recent_posts_li">
+          <a href="/2020/12/31/LAB%205%20%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" title="文件系统" target="_blank">文件系统</a>
+        </li>
+      
+        <li class="recent_posts_li">
           <a href="/2020/12/24/LAB%204%20%E5%A4%9A%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6/" title="多任务调度" target="_blank">多任务调度</a>
         </li>
       
@@ -859,10 +863,6 @@
       
         <li class="recent_posts_li">
           <a href="/2020/12/10/LAB%202%20%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" title="内存管理" target="_blank">内存管理</a>
-        </li>
-      
-        <li class="recent_posts_li">
-          <a href="/2020/12/06/LAB%201%20%20Booting%20a%20PC/" title="PC 启动过程中发生了什么？" target="_blank">PC 启动过程中发生了什么？</a>
         </li>
       
     </ul>
@@ -937,7 +937,7 @@
 
 <div class="theme-info">
   <div class="powered-by"></div>
-  <span class="post-count">博客全站共65.1k字</span>
+  <span class="post-count">博客全站共67.6k字</span>
 </div>
 <br>
 <!-- 网站运行时间的设置 -->

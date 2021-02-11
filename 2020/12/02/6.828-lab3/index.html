@@ -577,7 +577,7 @@
 <li><p>处理器切换到由 TSS 的 SS0 和 ESP0 字段定义的堆栈，这些字段在 JOS 中将分别保存 GD_KD 和 KSTACKTOP 的值。</p>
 </li>
 <li><p>处理器在内核堆栈上推送异常参数，从地址 KSTACKTOP 开始：</p>
-<p><img src="C:\Users\dier\Pictures\QQ截图20200723191354.png" class="lazyload" data-srcset="C:\Users\dier\Pictures\QQ截图20200723191354.png" srcset="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII="></p>
+<p><img src="C:\Users\dier\Pictures\QQ截图20200723191354.png"></p>
 </li>
 <li><p>由于我们处理的除法错误（在 x86 上是中断向量 0），因此处理器读取 IDT 条目 0 并设置 CS：EIP 以指向条目描述的处理程序函数。</p>
 </li>
@@ -585,17 +585,17 @@
 </li>
 </ol>
 <p>对于某些类型的 x86 异常，除了上面的”标准”五个单词外，处理器还推送到堆栈上另一个包含错误代码的单词。页错误异常（数字 14）是一个重要示例。请参阅 80386 手册，确定处理器推送错误代码的异常编号，以及错误代码在这种情况下的含义。当处理器推送错误代码，从用户模式进入异常处理程序时，堆栈将如下所示：</p>
-<p><img src="C:\Users\dier\Pictures\QQ截图20200723193408.png" class="lazyload" data-srcset="C:\Users\dier\Pictures\QQ截图20200723193408.png" srcset="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII="></p>
+<p><img src="C:\Users\dier\Pictures\QQ截图20200723193408.png"></p>
 <h3 id="1-8-Nested-Exceptions-and-Interrupts"><a href="#1-8-Nested-Exceptions-and-Interrupts" class="headerlink" title="1.8 Nested Exceptions and Interrupts"></a>1.8 Nested Exceptions and Interrupts</h3><p>处理器可以从内核和用户模式采取异常和中断。但是，只有在从用户模式进入内核时，x86 处理器才自动切换堆栈，然后再将其旧的寄存器状态推送到堆栈，并通过 IDT 调用相应的异常处理程序。如果处理器在发生中断或异常时已处于内核模式（CS 寄存器的低 2 位已为零），则 CPU 只是在同一内核堆栈上推送更多值。这样，内核就可以优雅地处理由内核本身中的代码引起的嵌套异常。此功能是实现保护的重要工具，我们将在稍后的系统调用部分中看到。</p>
 <p>如果处理器已处于内核模式并采用嵌套异常，因为它不需要切换堆栈，因此它不会保存旧的 SS 或 ESP 寄存器。对于不推送错误代码的异常类型，内核堆栈因此在进入异常处理程序时如下所示：</p>
-<p><img src="C:\Users\dier\Pictures\QQ截图20200723193910.png" class="lazyload" data-srcset="C:\Users\dier\Pictures\QQ截图20200723193910.png" srcset="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII="></p>
+<p><img src="C:\Users\dier\Pictures\QQ截图20200723193910.png"></p>
 <p>对于推送错误代码的异常类型，处理器会像以前一样，在旧 EIP 之后立即推送错误代码。</p>
 <p>处理器的嵌套异常功能有一个重要的警告。如果处理器在已处于内核模式时发生异常，并且由于缺少堆栈空间等任何原因无法将其旧状态推送到内核堆栈上，则处理器无法恢复，因此它只需重置自身即可。不用说，内核应当精心设计，以便这不会发生。</p>
 <h3 id="1-9-Setting-Up-the-IDT"><a href="#1-9-Setting-Up-the-IDT" class="headerlink" title="1.9 Setting Up the IDT"></a>1.9 Setting Up the IDT</h3><p>现在，您应该拥有设置 IDT 和处理 JOS 中的异常所需的基本信息。现在，您将设置 IDT 来处理中断向量 0-31（处理器异常）。我们将在本 lab 的稍后部分处理系统调用中断，并在以后的 lab 中添加中断 32-47（设备 IRQ）。</p>
 <p>头文件 inc/trap.h 和 kern/trap.h 包含与中断和异常相关的重要定义，您需要熟悉这些定义。文件 kern/trap.h 包含严格私有于内核的定义，而 inc/trap.h 包含对用户级程序和库也有用的定义。</p>
 <p>注意：范围 0-31 中的某些例外情况由 Intel 定义为保留。由于它们永远不会由处理器生成，因此您如何处理它们并不重要。做任何你认为最干净的。</p>
 <p>您应该实现的总体控制流程如下所述：</p>
-<p><img src="C:\Users\dier\Pictures\QQ截图20200723194530.png" class="lazyload" data-srcset="C:\Users\dier\Pictures\QQ截图20200723194530.png" srcset="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII="></p>
+<p><img src="C:\Users\dier\Pictures\QQ截图20200723194530.png"></p>
 <p>每个异常或中断都应在 trapentry.S 和 trap_init ()  中拥有自己的处理程序，应使用这些处理程序的地址初始化 IDT。每个处理程序都应在堆栈上构建结构 Trapframe（参见 inc/trap.h），并通过指向 Trapframe.trap() 的指针来调用 trap()（在 trap.c 中），从而处理 异常/中断 或调度到特定的处理程序函数。</p>
 <h4 id="Exercise-4"><a href="#Exercise-4" class="headerlink" title="Exercise 4."></a>Exercise 4.</h4><p>编辑 trapentry.S 和 trap.c 并实现上述功能。trapentry.S 中的 TRAPHANDLER 和 TRAPHANDLER_NOEC 的宏应该可以帮助您，以及在 inc/trap.h 中 T_*  的定义。您需要为 inc/trap.h 中定义的每个陷阱在  trapentry.S 中添加一个入口点（使用这些宏），并且您必须提供 TRAPHANDLER 宏引用的 _alltraps。您还需要修改 trap_init()  来初始化 idt，以指向 trapentry.S 中定义的每个入口点; STEGATE 宏将在这里提供帮助。</p>
 <p>_alltraps:</p>
@@ -838,7 +838,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">15</span>
+                  <span class="site-state-item-count">17</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -849,7 +849,7 @@
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
-                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-count">2</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>
@@ -906,6 +906,10 @@
       
       
         <li class="recent_posts_li">
+          <a href="/2020/12/31/LAB%205%20%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" title="文件系统" target="_blank">文件系统</a>
+        </li>
+      
+        <li class="recent_posts_li">
           <a href="/2020/12/24/LAB%204%20%E5%A4%9A%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6/" title="多任务调度" target="_blank">多任务调度</a>
         </li>
       
@@ -919,10 +923,6 @@
       
         <li class="recent_posts_li">
           <a href="/2020/12/10/LAB%202%20%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" title="内存管理" target="_blank">内存管理</a>
-        </li>
-      
-        <li class="recent_posts_li">
-          <a href="/2020/12/06/LAB%201%20%20Booting%20a%20PC/" title="PC 启动过程中发生了什么？" target="_blank">PC 启动过程中发生了什么？</a>
         </li>
       
     </ul>
@@ -997,7 +997,7 @@
 
 <div class="theme-info">
   <div class="powered-by"></div>
-  <span class="post-count">博客全站共65.1k字</span>
+  <span class="post-count">博客全站共67.6k字</span>
 </div>
 <br>
 <!-- 网站运行时间的设置 -->

@@ -484,8 +484,8 @@
 <p>我们的文件系统正好有一个超级块，它总是在磁盘上的块 1 上。它的布局由inc/fs.h 中的 struct Super 定义。块 0 通常被保留用来存放引导加载程序和分区表，因此文件系统通常不使用第一个磁盘块。许多“真正的”文件系统维护多个超级块，这些超级块复制到磁盘的多个间隔较远的区域，因此，如果其中一个超级块已损坏或磁盘在该区域出现介质错误，则仍可以找到其他超级块并使用它们访问文件系统。</p>
 <h3 id="File-Meta-data"><a href="#File-Meta-data" class="headerlink" title="File Meta-data"></a>File Meta-data</h3><p>文件系统中描述文件的元数据布局由 inc/fs.h 中的 struct file 描述。这些元数据包括文件名、大小、类型（常规文件或目录）以及指向组成文件的块的指针。如上所述，我们没有索引节点，所以这些元数据存储在磁盘上的目录项中。与大多数“真实”的文件系统不同，为了简单起见，我们将使用这个单一的文件结构来表示文件元数据，因为它既出现在磁盘上，也出现在内存中。</p>
 <p>struct 文件中的 f_direct 数组包含存储文件前 10 个（NDIRECT）块的块号的空间，我们称之为文件的直接块。对于大小不超过 10*4096 = 40KB 的小文件，这意味着所有文件块的块号将直接适合于文件结构本身。但是，对于较大的文件，我们需要一个存放文件其余块号的位置。因此，对于任何大于 40KB 的文件，我们分配一个额外的磁盘块，称为文件的间接块，以容纳 4096/4 = 1024 个额外的块号。因此，我们的文件系统允许文件的大小达到 1034 个块，或者刚好超过 4 M 字节。为了支持更大的文件，“真正的”文件系统通常也支持两个和三个间接块。</p>
-<p><img src="C:\Users\dier\Pictures\file.png" class="lazyload" data-srcset="C:\Users\dier\Pictures\file.png" srcset="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" alt="file"></p>
-<p><img src="C:\Users\dier\Pictures\disk.png" class="lazyload" data-srcset="C:\Users\dier\Pictures\disk.png" srcset="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" alt="disk"></p>
+<p><img src="C:\Users\dier\Pictures\file.png" alt="file"></p>
+<p><img src="C:\Users\dier\Pictures\disk.png" alt="disk"></p>
 <h3 id="Directories-versus-Regular-Files"><a href="#Directories-versus-Regular-Files" class="headerlink" title="Directories versus Regular Files"></a>Directories versus Regular Files</h3><p>文件系统中的文件结构可以表示常规文件或目录；这两种类型的“文件”通过 file 结构中的 type 字段来区分。文件系统以完全相同的方式管理常规文件和目录文件，只是它根本不解释与常规文件相关联的数据块的内容，而文件系统将目录文件的内容解释为一系列描述目录中文件和子目录的文件结构。</p>
 <p>文件系统中的 superblock 包含一个文件结构（struct Super 中的 root 字段），它保存文件系统根目录的元数据。这个目录文件的内容是一系列文件结构，描述文件系统根目录中的文件和目录。根目录中的任何子目录都可能包含更多表示子目录的文件结构，依此类推。</p>
 <h1 id="The-File-System"><a href="#The-File-System" class="headerlink" title="The File System"></a>The File System</h1><p>本 Lab 的目标不是让您实现整个文件系统，而是让您只实现某些关键组件。特别是，您将负责将块读入块缓存并将其刷新回磁盘；分配磁盘块；将文件偏移量映射到磁盘块；在 IPC 接口中实现读、写、打开。因为您不会自己实现所有的文件系统，所以您必须熟悉所提供的代码和各种文件系统接口。</p>
@@ -724,7 +724,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">15</span>
+                  <span class="site-state-item-count">17</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -735,7 +735,7 @@
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
-                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-count">2</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>
@@ -792,6 +792,10 @@
       
       
         <li class="recent_posts_li">
+          <a href="/2020/12/31/LAB%205%20%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" title="文件系统" target="_blank">文件系统</a>
+        </li>
+      
+        <li class="recent_posts_li">
           <a href="/2020/12/24/LAB%204%20%E5%A4%9A%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6/" title="多任务调度" target="_blank">多任务调度</a>
         </li>
       
@@ -805,10 +809,6 @@
       
         <li class="recent_posts_li">
           <a href="/2020/12/10/LAB%202%20%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" title="内存管理" target="_blank">内存管理</a>
-        </li>
-      
-        <li class="recent_posts_li">
-          <a href="/2020/12/06/LAB%201%20%20Booting%20a%20PC/" title="PC 启动过程中发生了什么？" target="_blank">PC 启动过程中发生了什么？</a>
         </li>
       
     </ul>
@@ -883,7 +883,7 @@
 
 <div class="theme-info">
   <div class="powered-by"></div>
-  <span class="post-count">博客全站共65.1k字</span>
+  <span class="post-count">博客全站共67.6k字</span>
 </div>
 <br>
 <!-- 网站运行时间的设置 -->
