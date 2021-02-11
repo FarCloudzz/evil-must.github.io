@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+  
+  
+    
+    
+  <script src="/lib/pace/pace.min.js?v=1.0.2"></script>
+  <link href="/lib/pace/pace-theme-minimal.min.css?v=1.0.2" rel="stylesheet">
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="MIT 6.824," />
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="明日边缘" type="application/atom+xml" />
+
+
+
+
+
+
+<meta name="description" content="Introduction在本 Lab 中，您将构建一个 K&#x2F;V 存储系统，它将 key “shards” 或分区到一组副本上。shard 是 K&#x2F;V 对的子集；例如，所有以 “a” 开头的键可能是一个 shard，所有以 “b” 开头的键可能是另一个 shard，等等。切分的原因是性能。每个副本组只处理几个 shard 的 put 和 get，并且这些组并行操作；因此，总的系统吞吐量（单位时间的投">
+<meta property="og:type" content="article">
+<meta property="og:title" content="6.824 Lab 4：Sharded Key&#x2F;Value Service">
+<meta property="og:url" content="http://evil-must.github.io/2020/12/03/6.824-lab4/index.html">
+<meta property="og:site_name" content="明日边缘">
+<meta property="og:description" content="Introduction在本 Lab 中，您将构建一个 K&#x2F;V 存储系统，它将 key “shards” 或分区到一组副本上。shard 是 K&#x2F;V 对的子集；例如，所有以 “a” 开头的键可能是一个 shard，所有以 “b” 开头的键可能是另一个 shard，等等。切分的原因是性能。每个副本组只处理几个 shard 的 put 和 get，并且这些组并行操作；因此，总的系统吞吐量（单位时间的投">
+<meta property="og:locale">
+<meta property="article:published_time" content="2020-12-03T02:16:12.000Z">
+<meta property="article:modified_time" content="2020-12-03T02:40:20.126Z">
+<meta property="article:author" content="别云">
+<meta property="article:tag" content="MIT 6.824">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":true,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://evil-must.github.io/2020/12/03/6.824-lab4/"/>
+
+
+
+
+
+  <title>6.824 Lab 4：Sharded Key/Value Service | 明日边缘</title>
+  
+
+
+
+
+
+  <script type="text/javascript">
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?6ed4c7d747139160a38d3f510c1cf801";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+<meta name="generator" content="Hexo 5.1.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">明日边缘</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">唯有生命中的黄金岁月一去就不再来</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/home/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-留言板">
+          <a href="/contact/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-question-circle"></i> <br />
+            
+            留言板
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br />
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off"
+             placeholder="搜索..." spellcheck="false"
+             type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://evil-must.github.io/2020/12/03/6.824-lab4/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/uploads/avatar.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="明日边缘">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">6.824 Lab 4：Sharded Key/Value Service</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-12-03T10:16:12+08:00">
+                2020-12-03
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/" itemprop="url" rel="index">
+                    <span itemprop="name">分布式</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2020/12/03/6.824-lab4/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2020/12/03/6.824-lab4/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+             <span id="/2020/12/03/6.824-lab4/" class="leancloud_visitors" data-flag-title="6.824 Lab 4：Sharded Key/Value Service">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">热度&#58;</span>
+               
+                 <span class="leancloud-visitors-count"></span>
+                 <span>℃</span>
+             </span>
+          
+
+          
+
+          
+            <div class="post-wordcount">
+              
+                
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">字数统计&#58;</span>
+                
+                <span title="字数统计">
+                  4.5k
+                </span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">阅读时长 &asymp;</span>
+                
+                <span title="阅读时长">
+                  17
+                </span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>在本 Lab 中，您将构建一个 K/V 存储系统，它将 key “shards” 或分区到一组副本上。shard 是 K/V 对的子集；例如，所有以 “a” 开头的键可能是一个 shard，所有以 “b” 开头的键可能是另一个 shard，等等。切分的原因是性能。每个副本组只处理几个 shard 的 put 和 get，并且这些组并行操作；因此，总的系统吞吐量（单位时间的投入和获得）与组的数量成比例地增加。</p>
+<a id="more"></a>
+
+<p>你的 sharded key/value store 有两个主要组件。首先，一组副本组。每个副本组负责 shards 的一个子集。一个副本由几个服务器组成，这些服务器使用 Raft 来复制组的 shards。第二个组件是 “shard master”。shard master 决定哪个副本组应该为每个 shard 提供服务；这个信息称为配置。配置会随着时间而变化。客户机咨询shard master 以找到 key 的副本组，而 replica group 则咨询 master 以找出要服务的 shard。整个系统只有一个 shard master，使用 Raft 实现容错服务。</p>
+<p>分片存储系统必须能够在副本组之间移动 shards。一个原因是某些组可能比其他组负载更大，因此需要移动 shards 来平衡负载。另一个原因是副本组可能加入和退出系统：可能会添加新的副本组以增加容量，或者现有副本组可能会脱机进行修复或退役。</p>
+<p>这个 Lab 的主要挑战是处理重新配置——改变分配给组的 shards。在单个副本组中，所有组成员必须就何时发生相对于客户端 Put/Append/Get 请求的重新配置达成一致。例如，一个 Put 可能与导致副本组不再负责持有 Put 密钥的 shard 的重新配置的时间相同。组中的所有副本都必须就 Put 发生在重新配置之前还是之后达成一致。如果在之前，Put 应该生效，并且 shard 的新所有者将看到它的效果；如果在之后，Put 将不生效，客户端必须重新尝试新所有者。建议的方法是让每个副本组使用 Raft 不仅记录 put、Appends 和 Get的序列，还记录重新配置的序列。您需要确保在任何时候最多有一个副本组为每个 shards 提供请求。</p>
+<p>重新配置还需要副本组之间的交互。例如，在配置 10 中，组 G1 可能负责碎片 S1。在配置11中，组 G2 可能负责碎片 S1。在从 10 到 11 的重新配置过程中，G1 和 G2 必须使用 RPC 将 shard S1（键/值对）的内容从 G1 移动到 G2。</p>
+<h3 id="Note"><a href="#Note" class="headerlink" title="Note:"></a>Note:</h3><ol>
+<li>只有 RPC 可用于客户端和服务器之间的交互。例如，不允许服务器的不同实例共享 Go 变量或文件。</li>
+<li>这个 Lab 使用 “configuration” 来指给副本组分配 shards。这与 Raft 集群成员身份更改不同。您不必实现 Raft 集群成员身份更改。</li>
+</ol>
+<p>这个 Lab 的通用体系结构（一个配置服务和一组副本组）遵循与 Flat Datacenter Storage、BigTable、Spanner、FAWN、ApacheHBase、Rosebud、Spinnaker 和许多其他应用程序相同的通用模式。不过，这些系统在许多细节上与本 Lab 不同，而且通常也更加复杂和功能强大。例如，Lab 不会进化出每个 Raft 中的 peers 集合；它的数据和查询模型非常简单；而且 shards 的切换很慢，不允许并发的客户端访问。</p>
+<h3 id="Note-1"><a href="#Note-1" class="headerlink" title="Note:"></a>Note:</h3><p>Your Lab 4 sharded server, Lab 4 shard master, and Lab 3 kvraft must all use the same Raft implementation.  We will re-run the Lab 2 and Lab 3 tests as part of grading Lab 4, and your score on the older tests will count towards your total Lab 4 grade. <strong>These tests are worth 10 points out of your overall Lab 4 grade.</strong></p>
+<h2 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h2><p>我们为您提供 <code>src/shardmaster</code> 和 <code>src/shardkv</code> 中的框架代码和测试。</p>
+<p>要启动并运行，请执行以下命令：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">$ cd ~/<span class="number">6.824</span></span><br><span class="line">$ git pull</span><br><span class="line">...</span><br><span class="line">$ cd src/shardmaster</span><br><span class="line">$ <span class="keyword">go</span> test</span><br><span class="line">--- FAIL: TestBasic (<span class="number">0.00</span>s)</span><br><span class="line">        test_test.<span class="keyword">go</span>:<span class="number">11</span>: wanted <span class="number">1</span> groups, got <span class="number">0</span></span><br><span class="line">FAIL</span><br><span class="line">exit status <span class="number">1</span></span><br><span class="line">FAIL    shardmaster     <span class="number">0.008</span>s</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
+
+<p>完成后，您的实现应该通过 <code>src/shardmaster </code>目录中的所有测试，以及 <code>src/shardkv</code> 中的所有测试。 </p>
+<h2 id="Part-A-The-Shard-Master"><a href="#Part-A-The-Shard-Master" class="headerlink" title="Part A: The Shard Master"></a>Part A: The Shard Master</h2><p>首先实现 <code>shardmaster/server.go</code> 和  <code>client.go</code>  中的 shard master。完成后，您应该通过 <code>shardmaster</code> 目录中的所有测试：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">$ cd ~/<span class="number">6.824</span>/src/shardmaster</span><br><span class="line">$ <span class="keyword">go</span> test</span><br><span class="line">Test: Basic leave/join ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: Historical queries ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: Move ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: Concurrent leave/join ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: Minimal transfers after joins ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: Minimal transfers after leaves ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: Multi-group join/leave ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: Concurrent multi leave/join ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: Minimal transfers after multijoins ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: Minimal transfers after multileaves ...</span><br><span class="line">  ... Passed</span><br><span class="line">PASS</span><br><span class="line">ok  	shardmaster	<span class="number">13.127</span>s</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
+
+<p>shardmaster 管理一系列已编号的配置。每个配置描述了一组副本组和一个分配给副本组的 shards。每当需要更改此分配时，shard master 将使用新分配创建一个新配置。当 key/value 客户端和服务器想知道当前（或过去）配置时，请与shardmaster联系。</p>
+<p>您的实现必须支持 <code>shardmaster/common.go</code> 中描述的 RPC 接口，它由 <code>Join</code>、<code>Leave</code>、<code>Move</code> 和 <code>Query </code> 等 RPCs 组成。这些 RPCs 旨在允许管理员（和测试）控制 shardmaster：添加新的副本组、消除副本组以及在副本组之间移动 shards。</p>
+<p>管理员使用 <code>Join</code> RPC 添加新的副本组。它的参数是从唯一的非零副本组标识符（GID）到服务器名称列表的一组映射。shardmaster 应该通过创建包含新副本组的新配置来做出反应。新的配置应该尽可能均匀地将 shards 分配到全组中，并且应该移动尽可能少的 shards 来实现这个目标。如果 GID 不是当前配置的一部分，shardmaster应该允许重用 GID（即 GID 应该被允许加入，然后离开，然后再次加入）。</p>
+<p><code>Leave</code>RPC 的参数是以前加入的组的 gid 列表。shardmaster 应该创建一个不包含这些组的新配置，并将这些组的 shards 分配给其余的组。新的配置应该尽可能均匀地在组中划分 shards，并且应该移动尽可能少的 shards 来实现这个目标。</p>
+<p><code>Move</code> RPC的参数是一个 shard number 和一个 GID。shardmaster 应该创建一个新的配置，其中 shards 被分配给组。Move 的目的是让我们测试您的软件。A <code>Join</code> or <code>Leave</code> following a <code>Move</code> will likely un-do the <code>Move</code>, since <code>Join</code> and <code>Leave</code> re-balance.</p>
+<p> <code>Query</code> RPC的参数是一个配置号。shardmaster 使用具有该编号的配置进行答复。如果这个数字是 -1 或大于已知的最大配置号，shardmaster 应该用最新的配置进行答复。 <code>Query(-1)</code> 的结果应反映 shardmaster 在收到 <code>Query(-1)</code> RPC 之前完成的每个 <code>Join</code>、<code>Leave</code> 或 <code>Move</code> RPC。</p>
+<p>第一个配置应该编号为零。它不应该包含任何组，所有 shards 都应该分配给 GID zero（无效的 GID）。下一个配置（响应 <code>Join</code> RPC 创建）应该编号为 1，&amp;c。通常会有比组更多的 shards（即，每个组将服务于多个 shards），以便可以以相当精细的粒度转移负载。</p>
+<h3 id="TASK"><a href="#TASK" class="headerlink" title="TASK"></a>TASK</h3><p>您的任务是在 <code>shardmaster/</code> 目录的  <code>client.go</code> 以及 <code>server.go</code> 中实现上面指定的接口 。你的 shardmaster 必须是容错的，使用 Lab 2/3的 Raft 库。请注意，我们将在对 Lab 4 进行评分时重新运行  Lab2 和 3 的测试，因此请确保不要在Raft 实现中引入 bug。通过 <code>shardmaster/</code> 中的所有测试后，您就完成了此任务。</p>
+<h3 id="Hint-1"><a href="#Hint-1" class="headerlink" title="Hint 1:"></a>Hint 1:</h3><p>从 kfraft 服务器的精简副本开始。</p>
+<h3 id="Hint-2"><a href="#Hint-2" class="headerlink" title="Hint 2:"></a>Hint 2:</h3><p>您应该为 shard master 的 RPCs 实现重复客户端请求检测。shard master 测试不会测试这个，但是 shardkv 测试稍后会在一个不可靠的网络上使用 shard master；如果你的 shard master 没有过滤出重复的rpc，你可能很难通过shardkv测试。</p>
+<h3 id="Hint-3"><a href="#Hint-3" class="headerlink" title="Hint 3:"></a>Hint 3:</h3><p>Go maps are references.</p>
+<p>如果将 map 类型的一个变量分配给另一个变量，则两个变量引用同一个映射。因此，如果您想在前一个配置的基础上创建一个新的配置，您需要创建一个新的 map对象（使用make（）），并分别复制键和值。</p>
+<h3 id="Hint-4"><a href="#Hint-4" class="headerlink" title="Hint 4:"></a>Hint 4:</h3><p>The Go race detector (go test -race) may help you find bugs.</p>
+<h2 id="Part-B-Sharded-Key-Value-Server"><a href="#Part-B-Sharded-Key-Value-Server" class="headerlink" title="Part B: Sharded Key/Value Server"></a>Part B: Sharded Key/Value Server</h2><p> **Important:**Do a <code>git pull</code> to get the latest lab software.</p>
+<p>现在您将构建 shardkv，一个分片容错密钥/值存储系统。You’ll modify <code>shardkv/client.go</code>, <code>shardkv/common.go</code>, and <code>shardkv/server.go</code>.</p>
+<p>每个 shardkv 服务器都作为副本组的一部分运行。每个副本组为一些 key-space  shards 提供 <code>Get</code>、<code>Put</code> 和 <code>Append</code> 操作。使用 <code>client.go</code> 中的 <code>key2shard()</code> 找到 key 属于哪一个 shard。多个副本组合作为完整的 shards 集提供服务。shard master 服务的单个实例将 shards 分配给副本组；当这个分配发生变化时，副本组必须相互传递 shards，同时确保客户端不会看到不一致的响应。</p>
+<p>存储系统必须为使用其客户端接口的应用程序提供可线性化的接口。也就是说， <code>shardkv/client.go</code>  的 <code>Clerk.Get()</code>, <code>Clerk.Put()</code>, and <code>Clerk.Append()</code>  方法被已完成的应用程序调用必须以相同的顺序影响所有副本。 <code>Clerk.Get()</code> 应该看到最近的 <code>Put</code>/<code>Append</code> 写入同一个键的值。即使在 <code>Gets</code> 和 <code>Puts</code> 在配置更改的同时到达，这也必须是真的。</p>
+<p>只有当 shards 的 Raft 副本组中的大多数服务器处于活动状态并且可以相互通信，并且可以与大多数 shard master 服务器通信时，才需要每个 shard 取得进展。即使某些副本组中的少数服务器死机、暂时不可用或速度慢，您的实现也必须运行（服务请求并能够根据需要重新配置）。</p>
+<p>shardkv 服务器仅是单个副本组的成员。给定副本组中的服务器集永远不会更改。</p>
+<p>我们为您提供  <code>client.go</code>  将每个 RPC 发送到负责 RPC 密钥的副本组的代码。如果副本组说它不负责密钥，它会重新尝试；在这种情况下，客户机代码向 shard  master 请求最新配置并重试。你得修改一下 <code>client.go</code> 作为处理重复客户机 RPCs 支持的一部分，就像 kvraft Lab 中一样。</p>
+<p>完成后，代码应通过除挑战测试以外的所有 shardkv 测试：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">$ cd ~/<span class="number">6.824</span>/src/shardkv</span><br><span class="line">$ <span class="keyword">go</span> test</span><br><span class="line">Test: static shards ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: join then leave ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: snapshots, join, and leave ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: servers miss configuration changes...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: concurrent puts and configuration changes...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: more concurrent puts and configuration changes...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: unreliable <span class="number">1.</span>..</span><br><span class="line">  ... Passed</span><br><span class="line">Test: unreliable <span class="number">2.</span>..</span><br><span class="line">  ... Passed</span><br><span class="line">Test: shard deletion (challenge <span class="number">1</span>) ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: concurrent configuration change and restart (challenge <span class="number">1</span>)...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: unaffected shard access (challenge <span class="number">2</span>) ...</span><br><span class="line">  ... Passed</span><br><span class="line">Test: partial migration shard access (challenge <span class="number">2</span>) ...</span><br><span class="line">  ... Passed</span><br><span class="line">PASS</span><br><span class="line">ok  	shardkv	<span class="number">206.132</span>s</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
+
+<p>**Note:**你的服务器不会调用 shard master 的<code>Join()</code> 。测试人员将在适当的时候调用<code>Join()</code> 。</p>
+<h3 id="Task-1"><a href="#Task-1" class="headerlink" title="Task 1:"></a>Task 1:</h3><p>你的第一个任务就是通过第一次 shardkv 测试。在这个测试中，只有一个 shards 分配，所以您的代码应该非常类似于您的 lab3 服务器的代码。最大的修改是让您的服务器检测配置何时发生，并开始接受 keys 与它现在拥有的 shards 匹配的请求。</p>
+<p>现在解决这个问题的方法是静态的。您需要让您的服务器监视配置更改，并在检测到配置更改时启动 shards 迁移过程。如果一个副本组丢失了一个 shard，它必须立即停止向该 shard 中的密钥提供请求，并开始将该 shard 的数据迁移到正在接管所有权的副本组。如果一个副本组获得了一个 shard，它需要等待前一个所有者发送旧的 shard 数据，然后才能接受对该 shard 的请求。</p>
+<h3 id="Task-2"><a href="#Task-2" class="headerlink" title="Task 2:"></a>Task 2:</h3><p>在配置更改期间实现 shrads 迁移。请确保副本组中的所有服务器在执行操作序列的同一点执行迁移，以便它们都接受或拒绝并发客户端请求。在进行后面的测试之前，您应该专注于通过第二个测试（“join then leave””）。当您通过所有测试到<code>TestDelete</code>（但不包括 <code>TestDelete</code>）时，您就完成了此任务。</p>
+<p><strong>Note：</strong></p>
+<p>您的服务器需要定期轮询 shard master 以了解新的配置。测试预计你的代码大约每 100 毫秒轮询一次；更多的频率是可以的，但是很少的频率可能会引起问题。</p>
+<p><strong>Note：</strong></p>
+<p>服务器需要互相发送 RPCs，以便在配置更改期间传输 shards。shard master 的<code>Config</code> 结构包含服务器名称，但是需要一个 <code>labrpc.ClientEnd</code> 以发送RPC。您应该使用传递给 <code>StartServer()</code> 的 <code>make_end()</code> 函数将服务器名转换为 <code>ClientEnd</code>。<code>shardkv/client.go</code>  包含执行此操作的代码。</p>
+<h3 id="Hint-1-1"><a href="#Hint-1-1" class="headerlink" title="Hint 1:"></a>Hint 1:</h3><p>添加代码到 <code>server.go</code> 以便定期从 shard master 获取最新配置，并添加代码以拒绝客户端请求（如果接收组不负责客户端密钥的 shards）。你还是应该通过第一次 test。</p>
+<h3 id="Hint-2-1"><a href="#Hint-2-1" class="headerlink" title="Hint 2:"></a>Hint 2:</h3><p>您的服务器应该用 <code>ErrWrongGroup</code> 错误响应服务器不负责的 key（即，对于一个没有分配给服务器组的 key）的客户端RPC。确保 <code>Get</code>、<code>Put</code> 和 <code>Append</code> 处理程序在并发重新配置时正确地做出了这个决定。</p>
+<h3 id="Hint-3-1"><a href="#Hint-3-1" class="headerlink" title="Hint 3:"></a>Hint 3:</h3><p>按顺序一次重新配置一个。</p>
+<h3 id="Hint-4-1"><a href="#Hint-4-1" class="headerlink" title="Hint 4:"></a>Hint 4:</h3><p>如果测试失败，检查 gob 错误（例如“gob:type not registered for interface…”）。Go 不认为 gob 错误是致命的，尽管它们对实 Lab 是致命的。</p>
+<h3 id="Hint-5"><a href="#Hint-5" class="headerlink" title="Hint 5:"></a>Hint 5:</h3><p>您最多需要为跨 shard 移动的客户端请求提供一次语义（重复检测）。</p>
+<h3 id="Hint-6"><a href="#Hint-6" class="headerlink" title="Hint 6:"></a>Hint 6:</h3><p>考虑一下 <code>shardkv</code> 客户机和服务器应该如何处理 <code>ErrWrongGroup</code>。如果客户机收到 <code>ErrWrongGroup</code>，是否应该更改序列号？如果服务器在执行 <code>Get</code> / <code>Put</code> 请求时返回 <code>ErrWrongGroup</code> ，是否应该更新客户端状态？</p>
+<h3 id="Hint-7"><a href="#Hint-7" class="headerlink" title="Hint 7:"></a>Hint 7:</h3><p>在服务器转移到一个新的配置之后，它可以继续存储它不再拥有的 shard（尽管这在实际系统中是令人遗憾的）。这可能有助于简化服务器实现。</p>
+<h3 id="Hint-8"><a href="#Hint-8" class="headerlink" title="Hint 8:"></a>Hint 8:</h3><p>当 G1 组在配置更改期间需要 G2 的 shard 时，G2 在处理日志条目的过程中的什么时候将 shard 发送给 G1 有关系吗？</p>
+<h3 id="Hint-9"><a href="#Hint-9" class="headerlink" title="Hint 9:"></a>Hint 9:</h3><p>您可以在 RPC 请求或回复中发送整个映射，这可能有助于保持 shards 传输代码的简单性。</p>
+<h3 id="Hint-10"><a href="#Hint-10" class="headerlink" title="Hint 10:"></a>Hint 10:</h3><p>如果您的一个 RPC 处理程序在它的回复中包含一个 map（例如，一个键/值 map），这是服务器状态的一部分，那么您可能会因为争用而出现 bug。RPC 系统必须读取映射才能将其发送给调用方，但是它没有持有覆盖 map 的锁。但是，您的服务器可能会在 RPC 系统读取该 map 时继续修改它。解决方案是让 RPC 处理程序在回复中包含 map 的副本。</p>
+<h3 id="Hint-11"><a href="#Hint-11" class="headerlink" title="Hint 11:"></a>Hint 11:</h3><p>如果您在 Raft 日志条目中放置了一个 map 或 slice，那么您的 key/value 服务器随后会在 applyCh 上看到该条目，并在 key/value 服务器的状态下保存对该 map/slice 的引用，那么您可能会有 race。</p>
+<h3 id="Hint-12"><a href="#Hint-12" class="headerlink" title="Hint 12:"></a>Hint 12:</h3><p>在配置更改期间，一对组可能需要在它们之间的两个方向上移动 shards。如果您看到死锁，这是一个可能的来源。</p>
+<h2 id="No-credit-challenge-exercises"><a href="#No-credit-challenge-exercises" class="headerlink" title="No-credit challenge exercises"></a>No-credit challenge exercises</h2><p>如果您要构建这样一个用于生产的系统，这两个特性将是必不可少的。</p>
+<h3 id="Garbage-collection-of-state"><a href="#Garbage-collection-of-state" class="headerlink" title="Garbage collection of state"></a>Garbage collection of state</h3><p>当一个副本组失去一个 shards 的所有权时，该副本组应该从其数据库中删除它丢失的密钥。对于它来说，保留它不再拥有、不再为请求提供服务的 values 是浪费。然而，这给迁移带来了一些问题。假设我们有两个组，G1 和 G2，有一个新的配置 C 将碎片从 G1 移到 G2。如果 G1 在转换到 C 时从其数据库中删除 S 中的所有键，G2 在试图移动到 C 时如何获得 S 的数据？</p>
+<h4 id="Chanllege"><a href="#Chanllege" class="headerlink" title="Chanllege"></a>Chanllege</h4><p>使每个副本组保留旧 shards 的时间不超过绝对必要的时间。即使像上面的 G1 这样的副本组中的所有服务器崩溃，然后重新启动，您的解决方案也必须工作。如果您通过了 <code>TestChallenge1Delete</code> 和 <code>TestChallenge1Concurrent</code>，则您已完成此挑战。</p>
+<h3 id="Client-requests-during-configuration-changes"><a href="#Client-requests-during-configuration-changes" class="headerlink" title="Client requests during configuration changes"></a>Client requests during configuration changes</h3><p>处理配置更改的最简单方法是在转换完成之前禁止所有客户端操作。虽然概念简单，但这种方法在生产级系统中不可行；当机器被带入或取出时，它会导致所有客户机长时间的暂停。最好继续提供不受正在进行的配置更改影响的碎片。</p>
+<h4 id="Chanllege-1"><a href="#Chanllege-1" class="headerlink" title="Chanllege"></a>Chanllege</h4><p>修改您的解决方案，以便在配置更改期间继续执行未受影响的 shards 中的密钥的客户端操作。当您未受影响地通过 <code>TestChallenge2</code> 时，您已完成此挑战。</p>
+<p>虽然上面的优化是好的，我们仍然可以做得更好。假设某个副本组 G3 在转换到 C时，需要 G1 的 shard S1 和 G2 的 shard S2。我们真的希望 G3 在收到必要的状态后立即开始服务一个 shard，即使它还在等待其他 shard。例如，如果 G1 关闭，G3 在从 G2 接收到适当的数据后，应该仍然开始为 S2 服务请求，尽管到 C 的转换还没有完成。</p>
+<h4 id="Chanllege-2"><a href="#Chanllege-2" class="headerlink" title="Chanllege"></a>Chanllege</h4><p>修改您的解决方案，以便副本组能够立即开始提供 shards，即使配置仍在进行中。当您通过 <code>TestChallenge2Partial</code> 时，您已完成此挑战。</p>
+
+      
+    </div>
+    
+    
+    
+    <div>
+      
+        <div>
+    
+        <div style="text-align:center;color: #ccc;font-size:14px;">-------------本文结束<i class="fa fa-paw"></i>感谢您的阅读-------------</div>
+    
+</div>
+      
+    </div>
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/MIT-6-824/" rel="tag"># MIT 6.824</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/12/03/6.824-lab3/" rel="next" title="6.824 Lab 3 : Fault-tolerant Key/Value Service">
+                <i class="fa fa-chevron-left"></i> 6.824 Lab 3 : Fault-tolerant Key/Value Service
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2020/12/06/LAB%201%20%20Booting%20a%20PC/" rel="prev" title="PC 启动过程中发生了什么？">
+                PC 启动过程中发生了什么？ <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+    <script>
+      window.onload = function(){
+        var valine = new Valine();
+        valine.init({
+          el: '#vcomments',
+          appId: "<%= theme.v_appId %>",
+          appKey: "<%= theme.v_appKey %>",
+          path: window.location.pathname,
+          placeholder: "你是我一生只会遇见一次的惊喜 ...",
+          avatar:'wavatar', //用不同面孔和背景组合生成的头像
+          notify: true, // 邮件提醒!!!
+          verify: true, // 验证码
+          })
+      }
+    </script>
+    </div>
+    
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/uploads/avatar.png"
+                alt="" />
+            
+              <p class="site-author-name" itemprop="name"></p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">15</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+          <!--
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+          -->
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/evil-must" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:15896677856@163.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+          
+
+  <div class="links-of-blogroll motion-element links-of-blogroll-block">
+    <div class="links-of-blogroll-title">
+      <!-- modify icon to fire by szw -->
+      <i class="fa fa-history fa-" aria-hidden="true"></i>
+      近期文章
+    </div>
+    <ul class="links-of-blogroll-list">
+      
+      
+        <li class="recent_posts_li">
+          <a href="/2020/12/24/LAB%204%20%E5%A4%9A%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6/" title="多任务调度" target="_blank">多任务调度</a>
+        </li>
+      
+        <li class="recent_posts_li">
+          <a href="/2020/12/23/LAB%203%20%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" title="进程管理" target="_blank">进程管理</a>
+        </li>
+      
+        <li class="recent_posts_li">
+          <a href="/2020/12/12/%E5%80%9A%E5%A4%A9%E5%B1%A0%E9%BE%99%E8%AE%B0/" title="宿命的审判" target="_blank">宿命的审判</a>
+        </li>
+      
+        <li class="recent_posts_li">
+          <a href="/2020/12/10/LAB%202%20%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" title="内存管理" target="_blank">内存管理</a>
+        </li>
+      
+        <li class="recent_posts_li">
+          <a href="/2020/12/06/LAB%201%20%20Booting%20a%20PC/" title="PC 启动过程中发生了什么？" target="_blank">PC 启动过程中发生了什么？</a>
+        </li>
+      
+    </ul>
+  </div>
+
+<!--
+<div id="music163player">
+    <iframe frameborder="no" border="0" marginwidth="0" marginheight="0" width=330 height=86 src="//music.163.com/outchain/player?type=2&id=1407551413&auto=1&height=66"></iframe>
+</div>
+-->
+          
+          
+
+          
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Introduction"><span class="nav-text">Introduction</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Note"><span class="nav-text">Note:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Note-1"><span class="nav-text">Note:</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Getting-Started"><span class="nav-text">Getting Started</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Part-A-The-Shard-Master"><span class="nav-text">Part A: The Shard Master</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#TASK"><span class="nav-text">TASK</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hint-1"><span class="nav-text">Hint 1:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hint-2"><span class="nav-text">Hint 2:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hint-3"><span class="nav-text">Hint 3:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hint-4"><span class="nav-text">Hint 4:</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Part-B-Sharded-Key-Value-Server"><span class="nav-text">Part B: Sharded Key&#x2F;Value Server</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Task-1"><span class="nav-text">Task 1:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Task-2"><span class="nav-text">Task 2:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hint-1-1"><span class="nav-text">Hint 1:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hint-2-1"><span class="nav-text">Hint 2:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hint-3-1"><span class="nav-text">Hint 3:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hint-4-1"><span class="nav-text">Hint 4:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hint-5"><span class="nav-text">Hint 5:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hint-6"><span class="nav-text">Hint 6:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hint-7"><span class="nav-text">Hint 7:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hint-8"><span class="nav-text">Hint 8:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hint-9"><span class="nav-text">Hint 9:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hint-10"><span class="nav-text">Hint 10:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hint-11"><span class="nav-text">Hint 11:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hint-12"><span class="nav-text">Hint 12:</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#No-credit-challenge-exercises"><span class="nav-text">No-credit challenge exercises</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Garbage-collection-of-state"><span class="nav-text">Garbage collection of state</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Chanllege"><span class="nav-text">Chanllege</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Client-requests-during-configuration-changes"><span class="nav-text">Client requests during configuration changes</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Chanllege-1"><span class="nav-text">Chanllege</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Chanllege-2"><span class="nav-text">Chanllege</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+<div class="copyright">&copy; 2020 &mdash; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">别云</span>
+  
+</div>
+只有行云忘不却, 追随着流水奔腾<br>
+<div class="powered-by">
+  <i class="fa fa-user-md"></i><span id="busuanzi_container_site_uv">
+    本站访客数:<span id="busuanzi_value_site_uv"></span>
+  </span>
+</div>
+<!--
+
+
+
+
+
+-->
+
+<div class="theme-info">
+  <div class="powered-by"></div>
+  <span class="post-count">博客全站共65.1k字</span>
+</div>
+<br>
+<!-- 网站运行时间的设置 -->
+<span id="timeDate">载入天数...</span>
+<span id="times">载入时分秒...</span>
+<script>
+    var now = new Date();
+    function createtime() {
+        var grt= new Date("12/01/2020 13:14:21");//此处修改你的建站时间或者网站上线时间
+        now.setTime(now.getTime()+250);
+        days = (now - grt ) / 1000 / 60 / 60 / 24; dnum = Math.floor(days);
+        hours = (now - grt ) / 1000 / 60 / 60 - (24 * dnum); hnum = Math.floor(hours);
+        if(String(hnum).length ==1 ){hnum = "0" + hnum;} minutes = (now - grt ) / 1000 /60 - (24 * 60 * dnum) - (60 * hnum);
+        mnum = Math.floor(minutes); if(String(mnum).length ==1 ){mnum = "0" + mnum;}
+        seconds = (now - grt ) / 1000 - (24 * 60 * 60 * dnum) - (60 * 60 * hnum) - (60 * mnum);
+        snum = Math.round(seconds); if(String(snum).length ==1 ){snum = "0" + snum;}
+        document.getElementById("timeDate").innerHTML = "本站已安全运行 "+dnum+" 天 ";
+        document.getElementById("times").innerHTML = hnum + " 小时 " + mnum + " 分 " + snum + " 秒";
+    }
+setInterval("createtime()",250);
+</script>
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+  </div>
+  
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/three/three.min.js"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/three/three-waves.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  
+  <script type="text/javascript">
+    var GUEST = ['nick','mail','link'];
+    var guest = 'nick,mail';
+    guest = guest.split(',').filter(item=>{
+      return GUEST.indexOf(item)>-1;
+    });
+    new Valine({
+        el: '#comments' ,
+        verify: true,
+        notify: true,
+        appId: 'y8UDCfGVDHBgEMFSGqOzHUwq-gzGzoHsz',
+        appKey: 'rWYiG4yjCtJ6Hd9eJegMbUgs',
+        placeholder: '没有独立思想的世界没有自由 (记得加上 https 哦:)',
+        avatar:'mm',
+        guest_info:guest,
+        pageSize:'10' || 10,
+    });
+  </script>
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+  <script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.4.js"></script>
+  <script>AV.initialize("y8UDCfGVDHBgEMFSGqOzHUwq-gzGzoHsz", "rWYiG4yjCtJ6Hd9eJegMbUgs");</script>
+  <script>
+    function showTime(Counter) {
+      var query = new AV.Query(Counter);
+      var entries = [];
+      var $visitors = $(".leancloud_visitors");
+
+      $visitors.each(function () {
+        entries.push( $(this).attr("id").trim() );
+      });
+
+      query.containedIn('url', entries);
+      query.find()
+        .done(function (results) {
+          var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+          if (results.length === 0) {
+            $visitors.find(COUNT_CONTAINER_REF).text(0);
+            return;
+          }
+
+          for (var i = 0; i < results.length; i++) {
+            var item = results[i];
+            var url = item.get('url');
+            var time = item.get('time');
+            var element = document.getElementById(url);
+
+            $(element).find(COUNT_CONTAINER_REF).text(time);
+          }
+          for(var i = 0; i < entries.length; i++) {
+            var url = entries[i];
+            var element = document.getElementById(url);
+            var countSpan = $(element).find(COUNT_CONTAINER_REF);
+            if( countSpan.text() == '') {
+              countSpan.text(0);
+            }
+          }
+        })
+        .fail(function (object, error) {
+          console.log("Error: " + error.code + " " + error.message);
+        });
+    }
+
+    function addCount(Counter) {
+      var $visitors = $(".leancloud_visitors");
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+      var query = new AV.Query(Counter);
+
+      query.equalTo("url", url);
+      query.find({
+        success: function(results) {
+          if (results.length > 0) {
+            var counter = results[0];
+            counter.fetchWhenSave(true);
+            counter.increment("time");
+            counter.save(null, {
+              success: function(counter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.get('time'));
+              },
+              error: function(counter, error) {
+                console.log('Failed to save Visitor num, with error message: ' + error.message);
+              }
+            });
+          } else {
+            var newcounter = new Counter();
+            /* Set ACL */
+            var acl = new AV.ACL();
+            acl.setPublicReadAccess(true);
+            acl.setPublicWriteAccess(true);
+            newcounter.setACL(acl);
+            /* End Set ACL */
+            newcounter.set("title", title);
+            newcounter.set("url", url);
+            newcounter.set("time", 1);
+            newcounter.save(null, {
+              success: function(newcounter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+              },
+              error: function(newcounter, error) {
+                console.log('Failed to create');
+              }
+            });
+          }
+        },
+        error: function(error) {
+          console.log('Error:' + error.code + " " + error.message);
+        }
+      });
+    }
+
+    $(function() {
+      var Counter = AV.Object.extend("Counter");
+      if ($('.leancloud_visitors').length == 1) {
+        addCount(Counter);
+      } else if ($('.post-title-link').length > 1) {
+        showTime(Counter);
+      }
+    });
+  </script>
+
+
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"left","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>
