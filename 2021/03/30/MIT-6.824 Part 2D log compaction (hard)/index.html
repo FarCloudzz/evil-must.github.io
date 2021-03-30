@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+  
+  
+    
+    
+  <script src="/lib/pace/pace.min.js?v=1.0.2"></script>
+  <link href="/lib/pace/pace-theme-minimal.min.css?v=1.0.2" rel="stylesheet">
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="明日边缘" type="application/atom+xml" />
+
+
+
+
+
+
+<meta name="description" content="MIT-6.824 Part 2D: log compaction (hard)实现快照。 1 持久化快照变量Raft 添加变量两个变量用于日志压缩。这两个变量与快照同样需要持久化。 12345678910111213141516171819202122232425262728type Raft struct &amp;#123;    &#x2F;&#x2F; log compaction	lastIncludedInde">
+<meta property="og:type" content="article">
+<meta property="og:title" content="明日边缘">
+<meta property="og:url" content="http://evil-must.github.io/2021/03/30/MIT-6.824%20Part%202D%20log%20compaction%20(hard)/index.html">
+<meta property="og:site_name" content="明日边缘">
+<meta property="og:description" content="MIT-6.824 Part 2D: log compaction (hard)实现快照。 1 持久化快照变量Raft 添加变量两个变量用于日志压缩。这两个变量与快照同样需要持久化。 12345678910111213141516171819202122232425262728type Raft struct &amp;#123;    &#x2F;&#x2F; log compaction	lastIncludedInde">
+<meta property="og:locale">
+<meta property="article:published_time" content="2021-03-30T06:20:57.572Z">
+<meta property="article:modified_time" content="2021-03-16T02:50:59.667Z">
+<meta property="article:author" content="别云">
+<meta property="article:tag" content="code, game">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"always","offset":12,"b2t":false,"scrollpercent":true,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://evil-must.github.io/2021/03/30/MIT-6.824 Part 2D log compaction (hard)/"/>
+
+
+
+
+
+  <title> | 明日边缘</title>
+  
+
+
+
+
+
+  <script type="text/javascript">
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?6ed4c7d747139160a38d3f510c1cf801";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+<meta name="generator" content="Hexo 5.1.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">明日边缘</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">唯有生命中的黄金岁月一去就不再来</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-留言板">
+          <a href="/contact/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-question-circle"></i> <br />
+            
+            留言板
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br />
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off"
+             placeholder="搜索..." spellcheck="false"
+             type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://evil-must.github.io/2021/03/30/MIT-6.824%20Part%202D%20log%20compaction%20(hard)/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="别云">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/uploads/1.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="明日边缘">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline"></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2021-03-30T14:20:57+08:00">
+                2021-03-30
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2021/03/30/MIT-6.824%20Part%202D%20log%20compaction%20(hard)/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2021/03/30/MIT-6.824%20Part%202D%20log%20compaction%20(hard)/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+             <span id="/2021/03/30/MIT-6.824%20Part%202D%20log%20compaction%20(hard)/" class="leancloud_visitors" data-flag-title="">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">热度&#58;</span>
+               
+                 <span class="leancloud-visitors-count"></span>
+                 <span>℃</span>
+             </span>
+          
+
+          
+
+          
+            <div class="post-wordcount">
+              
+                
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">字数统计&#58;</span>
+                
+                <span title="字数统计">
+                  5.5k 字
+                </span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">阅读时长 &asymp;</span>
+                
+                <span title="阅读时长">
+                  33 分钟
+                </span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="MIT-6-824-Part-2D-log-compaction-hard"><a href="#MIT-6-824-Part-2D-log-compaction-hard" class="headerlink" title="MIT-6.824 Part 2D: log compaction (hard)"></a>MIT-6.824 Part 2D: log compaction (<a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/labs/guidance.html">hard</a>)</h1><p>实现快照。</p>
+<h3 id="1-持久化快照变量"><a href="#1-持久化快照变量" class="headerlink" title="1 持久化快照变量"></a>1 持久化快照变量</h3><p>Raft 添加变量两个变量用于日志压缩。这两个变量与快照同样需要持久化。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Raft <span class="keyword">struct</span> &#123;</span><br><span class="line">    <span class="comment">// log compaction</span></span><br><span class="line">	lastIncludedIndex <span class="keyword">int</span> <span class="comment">// the snapshot replaces all entries up </span></span><br><span class="line">    					  <span class="comment">// through and including this index</span></span><br><span class="line">	lastIncludedTerm  <span class="keyword">int</span> <span class="comment">// term of lastIncludedIndex</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// func (rf *Raft) persist()</span></span><br><span class="line">e.Encode(rf.lastIncludedIndex)</span><br><span class="line">e.Encode(rf.lastIncludedTerm)</span><br><span class="line"><span class="comment">// func (rf *Raft) readPersist(data []byte)</span></span><br><span class="line"><span class="keyword">var</span> lastIncludedIndex <span class="keyword">int</span></span><br><span class="line"><span class="keyword">var</span> lastIncludedTerm <span class="keyword">int</span></span><br><span class="line"><span class="keyword">if</span> d.Decode(&amp;term) != <span class="literal">nil</span> || d.Decode(&amp;votefor) != <span class="literal">nil</span> ||</span><br><span class="line">d.Decode(&amp;log) != <span class="literal">nil</span> || d.Decode(&amp;lastIncludedIndex) != <span class="literal">nil</span> ||</span><br><span class="line">d.Decode(&amp;lastIncludedTerm) != <span class="literal">nil</span> &#123;</span><br><span class="line">    DPrintf(<span class="string">&quot;readPersist error in server&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    rf.mu.Lock()</span><br><span class="line">    rf.currentTerm = term</span><br><span class="line">    rf.voteFor = votefor</span><br><span class="line">    rf.log = log</span><br><span class="line">    rf.lastIncludedIndex = lastIncludedIndex</span><br><span class="line">    rf.lastIncludedTerm = lastIncludedTerm</span><br><span class="line">    rf.commitIndex = rf.lastIncludedIndex</span><br><span class="line">    rf.lastApplied = rf.lastIncludedIndex</span><br><span class="line">    rf.mu.Unlock()</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>快照持久化。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">persistWithSnapshot</span><span class="params">(snapshot []<span class="keyword">byte</span>)</span></span> &#123;</span><br><span class="line">	rf.persist()</span><br><span class="line">	rf.persister.SaveStateAndSnapshot(rf.persister.ReadRaftState(), snapshot)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="2-InstallSnapshot-RPC"><a href="#2-InstallSnapshot-RPC" class="headerlink" title="2 InstallSnapshot RPC"></a>2 InstallSnapshot RPC</h3><p>当 Leader 发现 Follower 的日志过于落后（即还没有 Leader 的快照），就向它发送快照（以 RPC 的方式）。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// figure.13</span></span><br><span class="line"><span class="keyword">type</span> InstallSnapshotArgs <span class="keyword">struct</span> &#123;</span><br><span class="line">	Term              <span class="keyword">int</span>    <span class="comment">// leader’s term</span></span><br><span class="line">	LeaderId          <span class="keyword">int</span>    <span class="comment">// so follower can redirect clients</span></span><br><span class="line">	LastIncludedIndex <span class="keyword">int</span>    <span class="comment">// the snapshot replaces all entries up through and including this index</span></span><br><span class="line">	LastIncludedTerm  <span class="keyword">int</span>    <span class="comment">// term of lastIncludedIndex</span></span><br><span class="line">	Data              []<span class="keyword">byte</span> <span class="comment">// raw bytes of the snapshot chunk, starting atoffset</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> InstallSnapshotReply <span class="keyword">struct</span> &#123;</span><br><span class="line">	Term <span class="keyword">int</span> <span class="comment">// currentTerm, for leader to update itself</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">sendInstallSnapshot</span><span class="params">(server <span class="keyword">int</span>, args *InstallSnapshotArgs, reply *InstallSnapshotReply)</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">	ok := rf.peers[server].Call(<span class="string">&quot;Raft.InstallSnapshot&quot;</span>, args, reply)</span><br><span class="line">	<span class="keyword">return</span> ok</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 接收快照但不安装，交给上层应用，由应用来决定何时安装。</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">InstallSnapshot</span><span class="params">(args *InstallSnapshotArgs, reply *InstallSnapshotReply)</span></span> &#123;</span><br><span class="line">	rf.mu.Lock()</span><br><span class="line">	reply.Term = rf.currentTerm</span><br><span class="line">	<span class="comment">// 1.Reply immediately if term &lt; currentTerm</span></span><br><span class="line">	<span class="keyword">if</span> args.Term &lt; rf.currentTerm &#123;</span><br><span class="line">		rf.mu.Unlock()</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">    &#125;</span><br><span class="line">	<span class="comment">// all server rule 1 If RPC request or response contains term T &gt; currentTerm:</span></span><br><span class="line">	<span class="comment">// set currentTerm = T, convert to follower (§5.1)</span></span><br><span class="line">	<span class="keyword">if</span> args.Term &gt; rf.currentTerm &#123;</span><br><span class="line">		rf.beFollower(args.Term)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// this gives the follower a sign of life with each chunk,</span></span><br><span class="line">	<span class="comment">// so it can reset its election timer.</span></span><br><span class="line">	send(rf.appendLogCh)</span><br><span class="line">	<span class="keyword">if</span> args.LastIncludedIndex &lt;= rf.lastIncludedIndex &#123;</span><br><span class="line">		rf.mu.Unlock()</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	applyMsg := ApplyMsg&#123;</span><br><span class="line">		CommandValid:  <span class="literal">false</span>,</span><br><span class="line">		Snapshot:      args.Data,</span><br><span class="line">		SnapshotTerm:  args.LastIncludedTerm,</span><br><span class="line">		SnapshotIndex: args.LastIncludedIndex,</span><br><span class="line">		SnapshotValid: <span class="literal">true</span>,</span><br><span class="line">	&#125;</span><br><span class="line">	rf.mu.Unlock()</span><br><span class="line">	rf.applyCh &lt;- applyMsg</span><br><span class="line">	<span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 向服务器发送快照。</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">CallInstallSnapshot</span><span class="params">(server <span class="keyword">int</span>)</span></span> &#123;</span><br><span class="line">	snapshot := rf.persister.ReadSnapshot()</span><br><span class="line">	args := InstallSnapshotArgs&#123;</span><br><span class="line">		Term:              rf.currentTerm,</span><br><span class="line">		LeaderId:          rf.me,</span><br><span class="line">		LastIncludedIndex: rf.lastIncludedIndex,</span><br><span class="line">		LastIncludedTerm:  rf.lastIncludedTerm,</span><br><span class="line">		Data:              snapshot,</span><br><span class="line">	&#125;</span><br><span class="line">	rf.mu.Unlock()</span><br><span class="line">	reply := &amp;InstallSnapshotReply&#123;&#125;</span><br><span class="line">	ok := rf.sendInstallSnapshot(server, &amp;args, reply)</span><br><span class="line">	rf.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> rf.mu.Unlock()</span><br><span class="line">	<span class="keyword">if</span> !ok || rf.state != Leader || rf.currentTerm != args.Term &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> reply.Term &gt; rf.currentTerm &#123;</span><br><span class="line">		rf.beFollower(reply.Term)</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	rf.updateNextIndex(rf.lastIncludedIndex, server)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-截取快照"><a href="#3-截取快照" class="headerlink" title="3 截取快照"></a>3 截取快照</h3><p>应用和 Raft 之间的接口，由应用决定何时截取快照。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">Snapshot</span><span class="params">(index <span class="keyword">int</span>, snapshot []<span class="keyword">byte</span>)</span></span> &#123;</span><br><span class="line">	<span class="comment">// Your code here (2D).</span></span><br><span class="line">	rf.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> rf.mu.Unlock()</span><br><span class="line">	<span class="keyword">if</span> index &lt;= rf.lastIncludedIndex &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	rf.log = <span class="built_in">append</span>(<span class="built_in">make</span>([]Log, <span class="number">0</span>), rf.log[index-rf.lastIncludedIndex:]...)</span><br><span class="line">	rf.lastIncludedIndex = index</span><br><span class="line">	rf.lastIncludedTerm = rf.getLog(index).Term</span><br><span class="line">	rf.persistWithSnapshot(snapshot)</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-安装快照"><a href="#4-安装快照" class="headerlink" title="4 安装快照"></a>4 安装快照</h3><p>应用和 Raft 之间的接口，由应用决定何时安装快照。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">CondInstallSnapshot</span><span class="params">(lastIncludedTerm <span class="keyword">int</span>, lastIncludedIndex <span class="keyword">int</span>, snapshot []<span class="keyword">byte</span>)</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">	<span class="comment">// Your code here (2D).</span></span><br><span class="line">	<span class="comment">// refuse to install a snapshot if it is an old snapshot</span></span><br><span class="line">	rf.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> rf.mu.Unlock()</span><br><span class="line">	<span class="keyword">if</span> lastIncludedIndex &lt;= rf.lastIncludedIndex &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 6.If existing log entry has same index and term as snapshot’s</span></span><br><span class="line">	<span class="comment">// last included entry, retain log entries following it and reply</span></span><br><span class="line">	<span class="keyword">if</span> lastIncludedIndex &lt; rf.logLen()<span class="number">-1</span> &#123;</span><br><span class="line">		rf.log = <span class="built_in">append</span>(<span class="built_in">make</span>([]Log, <span class="number">0</span>), rf.log[lastIncludedIndex-rf.lastIncludedIndex:]...)</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="comment">// 7.Discard the entire log</span></span><br><span class="line">		rf.log = []Log&#123;&#123;lastIncludedTerm, <span class="literal">nil</span>&#125;&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 8. Reset state machine using snapshot contents (and load</span></span><br><span class="line">	<span class="comment">// snapshot’s cluster configuration)</span></span><br><span class="line">	rf.lastIncludedIndex = lastIncludedIndex</span><br><span class="line">	rf.lastIncludedTerm = lastIncludedTerm</span><br><span class="line">	rf.persistWithSnapshot(snapshot)</span><br><span class="line">	rf.updateLastApplied()</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-检查-Follower-日志是否过于落后"><a href="#5-检查-Follower-日志是否过于落后" class="headerlink" title="5 检查 Follower 日志是否过于落后"></a>5 检查 Follower 日志是否过于落后</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// func (rf *Raft) callAppendEntries() </span></span><br><span class="line"><span class="comment">// The leader uses a new RPC called InstallSnapshot to</span></span><br><span class="line"><span class="comment">// send snapshots to followers that are too far behind;</span></span><br><span class="line"><span class="keyword">if</span> rf.nextIndex[server]-rf.lastIncludedIndex &lt; <span class="number">1</span> &#123;</span><br><span class="line">    rf.CallInstallSnapshot(server)</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-测试-go-test-run-2D"><a href="#6-测试-go-test-run-2D" class="headerlink" title="6 测试 go test -run 2D"></a>6 测试 <code>go test -run 2D</code></h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">Test (<span class="number">2</span>D): snapshots basic ...</span><br><span class="line">  ... Passed --   <span class="number">4.0</span>  <span class="number">3</span>  <span class="number">144</span>   <span class="number">50015</span>  <span class="number">251</span></span><br><span class="line">Test (<span class="number">2</span>D): install snapshots (disconnect) ...</span><br><span class="line">  ... Passed --  <span class="number">71.1</span>  <span class="number">3</span> <span class="number">2863</span>  <span class="number">775366</span>  <span class="number">391</span></span><br><span class="line">Test (<span class="number">2</span>D): install snapshots (disconnect+unreliable) ...</span><br><span class="line">  ... Passed --  <span class="number">83.1</span>  <span class="number">3</span> <span class="number">3486</span>  <span class="number">853941</span>  <span class="number">395</span></span><br><span class="line">Test (<span class="number">2</span>D): install snapshots (crash) ...</span><br><span class="line">  ... Passed --  <span class="number">27.0</span>  <span class="number">3</span> <span class="number">1046</span>  <span class="number">283600</span>  <span class="number">366</span></span><br><span class="line">Test (<span class="number">2</span>D): install snapshots (unreliable+crash) ...</span><br><span class="line">  ... Passed --  <span class="number">36.3</span>  <span class="number">3</span> <span class="number">1333</span>  <span class="number">341394</span>  <span class="number">368</span></span><br><span class="line">PASS</span><br><span class="line">ok      <span class="number">6.824</span>/raft      <span class="number">221.500</span>s</span><br></pre></td></tr></table></figure>
+
+<h3 id="7-测试-go-test-run-2D-race"><a href="#7-测试-go-test-run-2D-race" class="headerlink" title="7 测试 go test -run 2D -race"></a>7 测试 <code>go test -run 2D -race</code></h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">WARNING: DATA RACE</span><br><span class="line">Write at <span class="number">0x00c0002ef820</span> by goroutine <span class="number">20</span>:</span><br><span class="line">  <span class="number">6.824</span>/raft.(*Raft).beLeader()</span><br><span class="line">      /home/<span class="number">6.824</span>/src/raft/raft.<span class="keyword">go</span>:<span class="number">636</span> +<span class="number">0x164</span></span><br><span class="line">  <span class="number">6.824</span>/raft.(*Raft).attemptElection.func1()</span><br><span class="line">      /home/<span class="number">6.824</span>/src/raft/raft.<span class="keyword">go</span>:<span class="number">687</span> +<span class="number">0x2f5</span></span><br><span class="line"></span><br><span class="line">Previous read at <span class="number">0x00c0002ef820</span> by goroutine <span class="number">43</span>:</span><br><span class="line">  <span class="number">6.824</span>/raft.(*Raft).callAppendEntries.func1()</span><br><span class="line">      /home/<span class="number">6.824</span>/src/raft/raft.<span class="keyword">go</span>:<span class="number">459</span> +<span class="number">0xc0f</span></span><br><span class="line"></span><br><span class="line">Goroutine <span class="number">20</span> (running) created at:</span><br><span class="line">  <span class="number">6.824</span>/raft.(*Raft).attemptElection()</span><br><span class="line">      /home/<span class="number">6.824</span>/src/raft/raft.<span class="keyword">go</span>:<span class="number">662</span> +<span class="number">0x2fa</span></span><br><span class="line"></span><br><span class="line">Goroutine <span class="number">43</span> (finished) created at:</span><br><span class="line">  <span class="number">6.824</span>/raft.(*Raft).callAppendEntries()</span><br><span class="line">      /home/<span class="number">6.824</span>/src/raft/raft.<span class="keyword">go</span>:<span class="number">415</span> +<span class="number">0xc7</span></span><br><span class="line">  <span class="number">6.824</span>/raft.(*Raft).ticker()</span><br><span class="line">      /home/<span class="number">6.824</span>/src/raft/raft.<span class="keyword">go</span>:<span class="number">864</span> +<span class="number">0</span>x</span><br></pre></td></tr></table></figure>
+
+<h3 id="8-尝试加锁"><a href="#8-尝试加锁" class="headerlink" title="8 尝试加锁"></a>8 尝试加锁</h3><p>由于之前 Debug 的时候加了很多 <code>Dprintf</code> 在代码中，这些输出语句访问共享变量，导致锁竞争。注释这些代码，通过。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">Test (<span class="number">2</span>D): snapshots basic ...</span><br><span class="line">  ... Passed --   <span class="number">3.7</span>  <span class="number">3</span>  <span class="number">160</span>   <span class="number">54902</span>  <span class="number">251</span></span><br><span class="line">Test (<span class="number">2</span>D): install snapshots (disconnect) ...</span><br><span class="line">  ... Passed --  <span class="number">75.6</span>  <span class="number">3</span> <span class="number">2996</span>  <span class="number">812264</span>  <span class="number">382</span></span><br><span class="line">Test (<span class="number">2</span>D): install snapshots (disconnect+unreliable) ...</span><br><span class="line">  ... Passed --  <span class="number">75.6</span>  <span class="number">3</span> <span class="number">3213</span>  <span class="number">805997</span>  <span class="number">390</span></span><br><span class="line">Test (<span class="number">2</span>D): install snapshots (crash) ...</span><br><span class="line">  ... Passed --  <span class="number">27.7</span>  <span class="number">3</span> <span class="number">1110</span>  <span class="number">303618</span>  <span class="number">377</span></span><br><span class="line">Test (<span class="number">2</span>D): install snapshots (unreliable+crash) ...</span><br><span class="line">  ... Passed --  <span class="number">36.9</span>  <span class="number">3</span> <span class="number">1383</span>  <span class="number">349013</span>  <span class="number">379</span></span><br><span class="line">PASS</span><br><span class="line">ok  	<span class="number">6.824</span>/raft	<span class="number">219.512</span>s</span><br></pre></td></tr></table></figure>
+
+<h3 id="9-完整测试（2A-2B-2C-2D）"><a href="#9-完整测试（2A-2B-2C-2D）" class="headerlink" title="9 完整测试（2A+2B+2C+2D）"></a>9 完整测试（2A+2B+2C+2D）</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// time go test -race</span></span><br><span class="line">Test (<span class="number">2</span>A): initial election ...</span><br><span class="line">  ... Passed --   <span class="number">3.0</span>  <span class="number">3</span>  <span class="number">130</span>   <span class="number">35260</span>    <span class="number">0</span></span><br><span class="line">Test (<span class="number">2</span>A): election after network failure ...</span><br><span class="line">  ... Passed --   <span class="number">4.5</span>  <span class="number">3</span>  <span class="number">248</span>   <span class="number">47131</span>    <span class="number">0</span></span><br><span class="line">Test (<span class="number">2</span>A): multiple elections ...</span><br><span class="line">  ... Passed --   <span class="number">5.4</span>  <span class="number">7</span> <span class="number">1218</span>  <span class="number">225205</span>    <span class="number">0</span></span><br><span class="line">Test (<span class="number">2</span>B): basic agreement ...</span><br><span class="line">  ... Passed --   <span class="number">0.4</span>  <span class="number">3</span>   <span class="number">18</span>    <span class="number">4638</span>    <span class="number">3</span></span><br><span class="line">Test (<span class="number">2</span>B): RPC <span class="keyword">byte</span> count ...</span><br><span class="line">  ... Passed --   <span class="number">1.3</span>  <span class="number">3</span>   <span class="number">52</span>  <span class="number">114836</span>   <span class="number">11</span></span><br><span class="line">Test (<span class="number">2</span>B): agreement despite follower disconnection ...</span><br><span class="line">  ... Passed --   <span class="number">5.6</span>  <span class="number">3</span>  <span class="number">203</span>   <span class="number">52256</span>    <span class="number">7</span></span><br><span class="line">Test (<span class="number">2</span>B): no agreement <span class="keyword">if</span> too many followers disconnect ...</span><br><span class="line">  ... Passed --   <span class="number">3.4</span>  <span class="number">5</span>  <span class="number">376</span>   <span class="number">72791</span>    <span class="number">3</span></span><br><span class="line">Test (<span class="number">2</span>B): concurrent Start()s ...</span><br><span class="line">  ... Passed --   <span class="number">0.6</span>  <span class="number">3</span>   <span class="number">20</span>    <span class="number">5412</span>    <span class="number">6</span></span><br><span class="line">Test (<span class="number">2</span>B): rejoin of partitioned leader ...</span><br><span class="line">  ... Passed --   <span class="number">3.8</span>  <span class="number">3</span>  <span class="number">265</span>   <span class="number">58586</span>    <span class="number">4</span></span><br><span class="line">Test (<span class="number">2</span>B): leader backs up quickly over incorrect follower logs ...</span><br><span class="line">  ... Passed --  <span class="number">17.0</span>  <span class="number">5</span> <span class="number">2713</span> <span class="number">1962120</span>  <span class="number">102</span></span><br><span class="line">Test (<span class="number">2</span>B): RPC counts aren<span class="string">&#x27;t too high ...</span></span><br><span class="line"><span class="string">  ... Passed --   2.2  3   74   20570   12</span></span><br><span class="line"><span class="string">Test (2C): basic persistence ...</span></span><br><span class="line"><span class="string">  ... Passed --   3.2  3  136   33939    6</span></span><br><span class="line"><span class="string">Test (2C): more persistence ...</span></span><br><span class="line"><span class="string">  ... Passed --  18.1  5 1994  406840   17</span></span><br><span class="line"><span class="string">Test (2C): partitioned leader and one follower crash, leader restarts ...</span></span><br><span class="line"><span class="string">  ... Passed --   1.4  3   47   11650    4</span></span><br><span class="line"><span class="string">Test (2C): Figure 8 ...</span></span><br><span class="line"><span class="string">  ... Passed --  24.9  5 1371  284108   29</span></span><br><span class="line"><span class="string">Test (2C): unreliable agreement ...</span></span><br><span class="line"><span class="string">  ... Passed --   3.7  5  292   96333  246</span></span><br><span class="line"><span class="string">Test (2C): Figure 8 (unreliable) ...</span></span><br><span class="line"><span class="string">  ... Passed --  38.8  5 4989 17249652   77</span></span><br><span class="line"><span class="string">Test (2C): churn ...</span></span><br><span class="line"><span class="string">  ... Passed --  16.4  5 1403 1936386  564</span></span><br><span class="line"><span class="string">Test (2C): unreliable churn ...</span></span><br><span class="line"><span class="string">  ... Passed --  16.2  5 1203  502592  283</span></span><br><span class="line"><span class="string">Test (2D): snapshots basic ...</span></span><br><span class="line"><span class="string">  ... Passed --   4.0  3  158   55158  251</span></span><br><span class="line"><span class="string">Test (2D): install snapshots (disconnect) ...</span></span><br><span class="line"><span class="string">  ... Passed --  77.8  3 3069  831910  393</span></span><br><span class="line"><span class="string">Test (2D): install snapshots (disconnect+unreliable) ...</span></span><br><span class="line"><span class="string">  ... Passed --  68.6  3 2815  707338  380</span></span><br><span class="line"><span class="string">Test (2D): install snapshots (crash) ...</span></span><br><span class="line"><span class="string">  ... Passed --  26.9  3 1074  292445  355</span></span><br><span class="line"><span class="string">Test (2D): install snapshots (unreliable+crash) ...</span></span><br><span class="line"><span class="string">  ... Passed --  32.8  3 1287  327990  344</span></span><br><span class="line"><span class="string">PASS</span></span><br><span class="line"><span class="string">ok  	6.824/raft	380.201s</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">real    6m20.688s</span></span><br><span class="line"><span class="string">user    0m58.420s</span></span><br><span class="line"><span class="string">sys     0m13.094s</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="10-附上完整代码"><a href="#10-附上完整代码" class="headerlink" title="10 附上完整代码"></a>10 附上完整代码</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br><span class="line">257</span><br><span class="line">258</span><br><span class="line">259</span><br><span class="line">260</span><br><span class="line">261</span><br><span class="line">262</span><br><span class="line">263</span><br><span class="line">264</span><br><span class="line">265</span><br><span class="line">266</span><br><span class="line">267</span><br><span class="line">268</span><br><span class="line">269</span><br><span class="line">270</span><br><span class="line">271</span><br><span class="line">272</span><br><span class="line">273</span><br><span class="line">274</span><br><span class="line">275</span><br><span class="line">276</span><br><span class="line">277</span><br><span class="line">278</span><br><span class="line">279</span><br><span class="line">280</span><br><span class="line">281</span><br><span class="line">282</span><br><span class="line">283</span><br><span class="line">284</span><br><span class="line">285</span><br><span class="line">286</span><br><span class="line">287</span><br><span class="line">288</span><br><span class="line">289</span><br><span class="line">290</span><br><span class="line">291</span><br><span class="line">292</span><br><span class="line">293</span><br><span class="line">294</span><br><span class="line">295</span><br><span class="line">296</span><br><span class="line">297</span><br><span class="line">298</span><br><span class="line">299</span><br><span class="line">300</span><br><span class="line">301</span><br><span class="line">302</span><br><span class="line">303</span><br><span class="line">304</span><br><span class="line">305</span><br><span class="line">306</span><br><span class="line">307</span><br><span class="line">308</span><br><span class="line">309</span><br><span class="line">310</span><br><span class="line">311</span><br><span class="line">312</span><br><span class="line">313</span><br><span class="line">314</span><br><span class="line">315</span><br><span class="line">316</span><br><span class="line">317</span><br><span class="line">318</span><br><span class="line">319</span><br><span class="line">320</span><br><span class="line">321</span><br><span class="line">322</span><br><span class="line">323</span><br><span class="line">324</span><br><span class="line">325</span><br><span class="line">326</span><br><span class="line">327</span><br><span class="line">328</span><br><span class="line">329</span><br><span class="line">330</span><br><span class="line">331</span><br><span class="line">332</span><br><span class="line">333</span><br><span class="line">334</span><br><span class="line">335</span><br><span class="line">336</span><br><span class="line">337</span><br><span class="line">338</span><br><span class="line">339</span><br><span class="line">340</span><br><span class="line">341</span><br><span class="line">342</span><br><span class="line">343</span><br><span class="line">344</span><br><span class="line">345</span><br><span class="line">346</span><br><span class="line">347</span><br><span class="line">348</span><br><span class="line">349</span><br><span class="line">350</span><br><span class="line">351</span><br><span class="line">352</span><br><span class="line">353</span><br><span class="line">354</span><br><span class="line">355</span><br><span class="line">356</span><br><span class="line">357</span><br><span class="line">358</span><br><span class="line">359</span><br><span class="line">360</span><br><span class="line">361</span><br><span class="line">362</span><br><span class="line">363</span><br><span class="line">364</span><br><span class="line">365</span><br><span class="line">366</span><br><span class="line">367</span><br><span class="line">368</span><br><span class="line">369</span><br><span class="line">370</span><br><span class="line">371</span><br><span class="line">372</span><br><span class="line">373</span><br><span class="line">374</span><br><span class="line">375</span><br><span class="line">376</span><br><span class="line">377</span><br><span class="line">378</span><br><span class="line">379</span><br><span class="line">380</span><br><span class="line">381</span><br><span class="line">382</span><br><span class="line">383</span><br><span class="line">384</span><br><span class="line">385</span><br><span class="line">386</span><br><span class="line">387</span><br><span class="line">388</span><br><span class="line">389</span><br><span class="line">390</span><br><span class="line">391</span><br><span class="line">392</span><br><span class="line">393</span><br><span class="line">394</span><br><span class="line">395</span><br><span class="line">396</span><br><span class="line">397</span><br><span class="line">398</span><br><span class="line">399</span><br><span class="line">400</span><br><span class="line">401</span><br><span class="line">402</span><br><span class="line">403</span><br><span class="line">404</span><br><span class="line">405</span><br><span class="line">406</span><br><span class="line">407</span><br><span class="line">408</span><br><span class="line">409</span><br><span class="line">410</span><br><span class="line">411</span><br><span class="line">412</span><br><span class="line">413</span><br><span class="line">414</span><br><span class="line">415</span><br><span class="line">416</span><br><span class="line">417</span><br><span class="line">418</span><br><span class="line">419</span><br><span class="line">420</span><br><span class="line">421</span><br><span class="line">422</span><br><span class="line">423</span><br><span class="line">424</span><br><span class="line">425</span><br><span class="line">426</span><br><span class="line">427</span><br><span class="line">428</span><br><span class="line">429</span><br><span class="line">430</span><br><span class="line">431</span><br><span class="line">432</span><br><span class="line">433</span><br><span class="line">434</span><br><span class="line">435</span><br><span class="line">436</span><br><span class="line">437</span><br><span class="line">438</span><br><span class="line">439</span><br><span class="line">440</span><br><span class="line">441</span><br><span class="line">442</span><br><span class="line">443</span><br><span class="line">444</span><br><span class="line">445</span><br><span class="line">446</span><br><span class="line">447</span><br><span class="line">448</span><br><span class="line">449</span><br><span class="line">450</span><br><span class="line">451</span><br><span class="line">452</span><br><span class="line">453</span><br><span class="line">454</span><br><span class="line">455</span><br><span class="line">456</span><br><span class="line">457</span><br><span class="line">458</span><br><span class="line">459</span><br><span class="line">460</span><br><span class="line">461</span><br><span class="line">462</span><br><span class="line">463</span><br><span class="line">464</span><br><span class="line">465</span><br><span class="line">466</span><br><span class="line">467</span><br><span class="line">468</span><br><span class="line">469</span><br><span class="line">470</span><br><span class="line">471</span><br><span class="line">472</span><br><span class="line">473</span><br><span class="line">474</span><br><span class="line">475</span><br><span class="line">476</span><br><span class="line">477</span><br><span class="line">478</span><br><span class="line">479</span><br><span class="line">480</span><br><span class="line">481</span><br><span class="line">482</span><br><span class="line">483</span><br><span class="line">484</span><br><span class="line">485</span><br><span class="line">486</span><br><span class="line">487</span><br><span class="line">488</span><br><span class="line">489</span><br><span class="line">490</span><br><span class="line">491</span><br><span class="line">492</span><br><span class="line">493</span><br><span class="line">494</span><br><span class="line">495</span><br><span class="line">496</span><br><span class="line">497</span><br><span class="line">498</span><br><span class="line">499</span><br><span class="line">500</span><br><span class="line">501</span><br><span class="line">502</span><br><span class="line">503</span><br><span class="line">504</span><br><span class="line">505</span><br><span class="line">506</span><br><span class="line">507</span><br><span class="line">508</span><br><span class="line">509</span><br><span class="line">510</span><br><span class="line">511</span><br><span class="line">512</span><br><span class="line">513</span><br><span class="line">514</span><br><span class="line">515</span><br><span class="line">516</span><br><span class="line">517</span><br><span class="line">518</span><br><span class="line">519</span><br><span class="line">520</span><br><span class="line">521</span><br><span class="line">522</span><br><span class="line">523</span><br><span class="line">524</span><br><span class="line">525</span><br><span class="line">526</span><br><span class="line">527</span><br><span class="line">528</span><br><span class="line">529</span><br><span class="line">530</span><br><span class="line">531</span><br><span class="line">532</span><br><span class="line">533</span><br><span class="line">534</span><br><span class="line">535</span><br><span class="line">536</span><br><span class="line">537</span><br><span class="line">538</span><br><span class="line">539</span><br><span class="line">540</span><br><span class="line">541</span><br><span class="line">542</span><br><span class="line">543</span><br><span class="line">544</span><br><span class="line">545</span><br><span class="line">546</span><br><span class="line">547</span><br><span class="line">548</span><br><span class="line">549</span><br><span class="line">550</span><br><span class="line">551</span><br><span class="line">552</span><br><span class="line">553</span><br><span class="line">554</span><br><span class="line">555</span><br><span class="line">556</span><br><span class="line">557</span><br><span class="line">558</span><br><span class="line">559</span><br><span class="line">560</span><br><span class="line">561</span><br><span class="line">562</span><br><span class="line">563</span><br><span class="line">564</span><br><span class="line">565</span><br><span class="line">566</span><br><span class="line">567</span><br><span class="line">568</span><br><span class="line">569</span><br><span class="line">570</span><br><span class="line">571</span><br><span class="line">572</span><br><span class="line">573</span><br><span class="line">574</span><br><span class="line">575</span><br><span class="line">576</span><br><span class="line">577</span><br><span class="line">578</span><br><span class="line">579</span><br><span class="line">580</span><br><span class="line">581</span><br><span class="line">582</span><br><span class="line">583</span><br><span class="line">584</span><br><span class="line">585</span><br><span class="line">586</span><br><span class="line">587</span><br><span class="line">588</span><br><span class="line">589</span><br><span class="line">590</span><br><span class="line">591</span><br><span class="line">592</span><br><span class="line">593</span><br><span class="line">594</span><br><span class="line">595</span><br><span class="line">596</span><br><span class="line">597</span><br><span class="line">598</span><br><span class="line">599</span><br><span class="line">600</span><br><span class="line">601</span><br><span class="line">602</span><br><span class="line">603</span><br><span class="line">604</span><br><span class="line">605</span><br><span class="line">606</span><br><span class="line">607</span><br><span class="line">608</span><br><span class="line">609</span><br><span class="line">610</span><br><span class="line">611</span><br><span class="line">612</span><br><span class="line">613</span><br><span class="line">614</span><br><span class="line">615</span><br><span class="line">616</span><br><span class="line">617</span><br><span class="line">618</span><br><span class="line">619</span><br><span class="line">620</span><br><span class="line">621</span><br><span class="line">622</span><br><span class="line">623</span><br><span class="line">624</span><br><span class="line">625</span><br><span class="line">626</span><br><span class="line">627</span><br><span class="line">628</span><br><span class="line">629</span><br><span class="line">630</span><br><span class="line">631</span><br><span class="line">632</span><br><span class="line">633</span><br><span class="line">634</span><br><span class="line">635</span><br><span class="line">636</span><br><span class="line">637</span><br><span class="line">638</span><br><span class="line">639</span><br><span class="line">640</span><br><span class="line">641</span><br><span class="line">642</span><br><span class="line">643</span><br><span class="line">644</span><br><span class="line">645</span><br><span class="line">646</span><br><span class="line">647</span><br><span class="line">648</span><br><span class="line">649</span><br><span class="line">650</span><br><span class="line">651</span><br><span class="line">652</span><br><span class="line">653</span><br><span class="line">654</span><br><span class="line">655</span><br><span class="line">656</span><br><span class="line">657</span><br><span class="line">658</span><br><span class="line">659</span><br><span class="line">660</span><br><span class="line">661</span><br><span class="line">662</span><br><span class="line">663</span><br><span class="line">664</span><br><span class="line">665</span><br><span class="line">666</span><br><span class="line">667</span><br><span class="line">668</span><br><span class="line">669</span><br><span class="line">670</span><br><span class="line">671</span><br><span class="line">672</span><br><span class="line">673</span><br><span class="line">674</span><br><span class="line">675</span><br><span class="line">676</span><br><span class="line">677</span><br><span class="line">678</span><br><span class="line">679</span><br><span class="line">680</span><br><span class="line">681</span><br><span class="line">682</span><br><span class="line">683</span><br><span class="line">684</span><br><span class="line">685</span><br><span class="line">686</span><br><span class="line">687</span><br><span class="line">688</span><br><span class="line">689</span><br><span class="line">690</span><br><span class="line">691</span><br><span class="line">692</span><br><span class="line">693</span><br><span class="line">694</span><br><span class="line">695</span><br><span class="line">696</span><br><span class="line">697</span><br><span class="line">698</span><br><span class="line">699</span><br><span class="line">700</span><br><span class="line">701</span><br><span class="line">702</span><br><span class="line">703</span><br><span class="line">704</span><br><span class="line">705</span><br><span class="line">706</span><br><span class="line">707</span><br><span class="line">708</span><br><span class="line">709</span><br><span class="line">710</span><br><span class="line">711</span><br><span class="line">712</span><br><span class="line">713</span><br><span class="line">714</span><br><span class="line">715</span><br><span class="line">716</span><br><span class="line">717</span><br><span class="line">718</span><br><span class="line">719</span><br><span class="line">720</span><br><span class="line">721</span><br><span class="line">722</span><br><span class="line">723</span><br><span class="line">724</span><br><span class="line">725</span><br><span class="line">726</span><br><span class="line">727</span><br><span class="line">728</span><br><span class="line">729</span><br><span class="line">730</span><br><span class="line">731</span><br><span class="line">732</span><br><span class="line">733</span><br><span class="line">734</span><br><span class="line">735</span><br><span class="line">736</span><br><span class="line">737</span><br><span class="line">738</span><br><span class="line">739</span><br><span class="line">740</span><br><span class="line">741</span><br><span class="line">742</span><br><span class="line">743</span><br><span class="line">744</span><br><span class="line">745</span><br><span class="line">746</span><br><span class="line">747</span><br><span class="line">748</span><br><span class="line">749</span><br><span class="line">750</span><br><span class="line">751</span><br><span class="line">752</span><br><span class="line">753</span><br><span class="line">754</span><br><span class="line">755</span><br><span class="line">756</span><br><span class="line">757</span><br><span class="line">758</span><br><span class="line">759</span><br><span class="line">760</span><br><span class="line">761</span><br><span class="line">762</span><br><span class="line">763</span><br><span class="line">764</span><br><span class="line">765</span><br><span class="line">766</span><br><span class="line">767</span><br><span class="line">768</span><br><span class="line">769</span><br><span class="line">770</span><br><span class="line">771</span><br><span class="line">772</span><br><span class="line">773</span><br><span class="line">774</span><br><span class="line">775</span><br><span class="line">776</span><br><span class="line">777</span><br><span class="line">778</span><br><span class="line">779</span><br><span class="line">780</span><br><span class="line">781</span><br><span class="line">782</span><br><span class="line">783</span><br><span class="line">784</span><br><span class="line">785</span><br><span class="line">786</span><br><span class="line">787</span><br><span class="line">788</span><br><span class="line">789</span><br><span class="line">790</span><br><span class="line">791</span><br><span class="line">792</span><br><span class="line">793</span><br><span class="line">794</span><br><span class="line">795</span><br><span class="line">796</span><br><span class="line">797</span><br><span class="line">798</span><br><span class="line">799</span><br><span class="line">800</span><br><span class="line">801</span><br><span class="line">802</span><br><span class="line">803</span><br><span class="line">804</span><br><span class="line">805</span><br><span class="line">806</span><br><span class="line">807</span><br><span class="line">808</span><br><span class="line">809</span><br><span class="line">810</span><br><span class="line">811</span><br><span class="line">812</span><br><span class="line">813</span><br><span class="line">814</span><br><span class="line">815</span><br><span class="line">816</span><br><span class="line">817</span><br><span class="line">818</span><br><span class="line">819</span><br><span class="line">820</span><br><span class="line">821</span><br><span class="line">822</span><br><span class="line">823</span><br><span class="line">824</span><br><span class="line">825</span><br><span class="line">826</span><br><span class="line">827</span><br><span class="line">828</span><br><span class="line">829</span><br><span class="line">830</span><br><span class="line">831</span><br><span class="line">832</span><br><span class="line">833</span><br><span class="line">834</span><br><span class="line">835</span><br><span class="line">836</span><br><span class="line">837</span><br><span class="line">838</span><br><span class="line">839</span><br><span class="line">840</span><br><span class="line">841</span><br><span class="line">842</span><br><span class="line">843</span><br><span class="line">844</span><br><span class="line">845</span><br><span class="line">846</span><br><span class="line">847</span><br><span class="line">848</span><br><span class="line">849</span><br><span class="line">850</span><br><span class="line">851</span><br><span class="line">852</span><br><span class="line">853</span><br><span class="line">854</span><br><span class="line">855</span><br><span class="line">856</span><br><span class="line">857</span><br><span class="line">858</span><br><span class="line">859</span><br><span class="line">860</span><br><span class="line">861</span><br><span class="line">862</span><br><span class="line">863</span><br><span class="line">864</span><br><span class="line">865</span><br><span class="line">866</span><br><span class="line">867</span><br><span class="line">868</span><br><span class="line">869</span><br><span class="line">870</span><br><span class="line">871</span><br><span class="line">872</span><br><span class="line">873</span><br><span class="line">874</span><br><span class="line">875</span><br><span class="line">876</span><br><span class="line">877</span><br><span class="line">878</span><br><span class="line">879</span><br><span class="line">880</span><br><span class="line">881</span><br><span class="line">882</span><br><span class="line">883</span><br><span class="line">884</span><br><span class="line">885</span><br><span class="line">886</span><br><span class="line">887</span><br><span class="line">888</span><br><span class="line">889</span><br><span class="line">890</span><br><span class="line">891</span><br><span class="line">892</span><br><span class="line">893</span><br><span class="line">894</span><br><span class="line">895</span><br><span class="line">896</span><br><span class="line">897</span><br><span class="line">898</span><br><span class="line">899</span><br><span class="line">900</span><br><span class="line">901</span><br><span class="line">902</span><br><span class="line">903</span><br><span class="line">904</span><br><span class="line">905</span><br><span class="line">906</span><br><span class="line">907</span><br><span class="line">908</span><br><span class="line">909</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> raft</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// this is an outline of the API that raft must expose to</span></span><br><span class="line"><span class="comment">// the service (or tester). see comments below for</span></span><br><span class="line"><span class="comment">// each of these functions for more details.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// rf = Make(...)</span></span><br><span class="line"><span class="comment">//   create a new Raft server.</span></span><br><span class="line"><span class="comment">// rf.Start(command interface&#123;&#125;) (index, term, isleader)</span></span><br><span class="line"><span class="comment">//   start agreement on a new log entry</span></span><br><span class="line"><span class="comment">// rf.GetState() (term, isLeader)</span></span><br><span class="line"><span class="comment">//   ask a Raft for its current term, and whether it thinks it is leader</span></span><br><span class="line"><span class="comment">// ApplyMsg</span></span><br><span class="line"><span class="comment">//   each time a new entry is committed to the log, each Raft peer</span></span><br><span class="line"><span class="comment">//   should send an ApplyMsg to the service (or tester)</span></span><br><span class="line"><span class="comment">//   in the same server.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="comment">//	&quot;bytes&quot;</span></span><br><span class="line">	<span class="string">&quot;bytes&quot;</span></span><br><span class="line">	<span class="string">&quot;math/rand&quot;</span></span><br><span class="line">	<span class="string">&quot;sort&quot;</span></span><br><span class="line">	<span class="string">&quot;sync&quot;</span></span><br><span class="line">	<span class="string">&quot;sync/atomic&quot;</span></span><br><span class="line">	<span class="string">&quot;time&quot;</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//	&quot;6.824/labgob&quot;</span></span><br><span class="line">	<span class="string">&quot;6.824/labgob&quot;</span></span><br><span class="line">	<span class="string">&quot;6.824/labrpc&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// as each Raft peer becomes aware that successive log entries are</span></span><br><span class="line"><span class="comment">// committed, the peer should send an ApplyMsg to the service (or</span></span><br><span class="line"><span class="comment">// tester) on the same server, via the applyCh passed to Make(). set</span></span><br><span class="line"><span class="comment">// CommandValid to true to indicate that the ApplyMsg contains a newly</span></span><br><span class="line"><span class="comment">// committed log entry.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// in part 2D you&#x27;ll want to send other kinds of messages (e.g.,</span></span><br><span class="line"><span class="comment">// snapshots) on the applyCh, but set CommandValid to false for these</span></span><br><span class="line"><span class="comment">// other uses.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="keyword">type</span> ApplyMsg <span class="keyword">struct</span> &#123;</span><br><span class="line">	CommandValid <span class="keyword">bool</span></span><br><span class="line">	Command      <span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">	CommandIndex <span class="keyword">int</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// For 2D:</span></span><br><span class="line">	SnapshotValid <span class="keyword">bool</span></span><br><span class="line">	Snapshot      []<span class="keyword">byte</span></span><br><span class="line">	SnapshotTerm  <span class="keyword">int</span></span><br><span class="line">	SnapshotIndex <span class="keyword">int</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// some constant</span></span><br><span class="line"><span class="keyword">const</span> (</span><br><span class="line">	Follower  <span class="keyword">int</span> = <span class="number">1</span></span><br><span class="line">	Candidate <span class="keyword">int</span> = <span class="number">2</span></span><br><span class="line">	Leader    <span class="keyword">int</span> = <span class="number">3</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">// Log struct</span></span><br><span class="line"><span class="keyword">type</span> Log <span class="keyword">struct</span> &#123;</span><br><span class="line">	Term    <span class="keyword">int</span></span><br><span class="line">	Command <span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// A Go object implementing a single Raft peer.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="keyword">type</span> Raft <span class="keyword">struct</span> &#123;</span><br><span class="line">	mu        sync.Mutex          <span class="comment">// Lock to protect shared access to this peer&#x27;s state</span></span><br><span class="line">	peers     []*labrpc.ClientEnd <span class="comment">// RPC end points of all peers</span></span><br><span class="line">	persister *Persister          <span class="comment">// Object to hold this peer&#x27;s persisted state</span></span><br><span class="line">	me        <span class="keyword">int</span>                 <span class="comment">// this peer&#x27;s index into peers[]</span></span><br><span class="line">	dead      <span class="keyword">int32</span>               <span class="comment">// set by Kill()</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// Your data here (2A, 2B, 2C).</span></span><br><span class="line">	<span class="comment">// Look at the paper&#x27;s Figure 2 for a description of what</span></span><br><span class="line">	<span class="comment">// state a Raft server must maintain.</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// Persistent state on all servers:</span></span><br><span class="line">	voteFor     <span class="keyword">int</span></span><br><span class="line">	currentTerm <span class="keyword">int</span></span><br><span class="line">	log         []Log</span><br><span class="line"></span><br><span class="line">	<span class="comment">// some channels</span></span><br><span class="line">	applyCh <span class="keyword">chan</span> ApplyMsg</span><br><span class="line"></span><br><span class="line">	voteCh      <span class="keyword">chan</span> <span class="keyword">bool</span></span><br><span class="line">	appendLogCh <span class="keyword">chan</span> <span class="keyword">bool</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// Volatile state on all servers:</span></span><br><span class="line">	commitIndex <span class="keyword">int</span></span><br><span class="line">	lastApplied <span class="keyword">int</span></span><br><span class="line">	state       <span class="keyword">int</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// Volatile state on leaders:</span></span><br><span class="line">	<span class="comment">// (Reinitialized after election)</span></span><br><span class="line">	nextIndex  []<span class="keyword">int</span></span><br><span class="line">	matchIndex []<span class="keyword">int</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// log compaction</span></span><br><span class="line">	lastIncludedIndex <span class="keyword">int</span> <span class="comment">// the snapshot replaces all entries up through and including this index</span></span><br><span class="line">	lastIncludedTerm  <span class="keyword">int</span> <span class="comment">// term of lastIncludedIndex</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// return currentTerm and whether this server</span></span><br><span class="line"><span class="comment">// believes it is the leader.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">GetState</span><span class="params">()</span> <span class="params">(<span class="keyword">int</span>, <span class="keyword">bool</span>)</span></span> &#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">var</span> term <span class="keyword">int</span></span><br><span class="line">	<span class="keyword">var</span> isleader <span class="keyword">bool</span></span><br><span class="line">	<span class="comment">// Your code here (2A).</span></span><br><span class="line">	isleader = <span class="literal">false</span></span><br><span class="line"></span><br><span class="line">	rf.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> rf.mu.Unlock()</span><br><span class="line">	term = rf.currentTerm</span><br><span class="line">	<span class="keyword">if</span> rf.state == Leader &#123;</span><br><span class="line">		isleader = <span class="literal">true</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> term, isleader</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// save Raft&#x27;s persistent state to stable storage,</span></span><br><span class="line"><span class="comment">// where it can later be retrieved after a crash and restart.</span></span><br><span class="line"><span class="comment">// see paper&#x27;s Figure 2 for a description of what should be persistent.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">persist</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="comment">// Your code here (2C).</span></span><br><span class="line">	w := <span class="built_in">new</span>(bytes.Buffer)</span><br><span class="line">	e := labgob.NewEncoder(w)</span><br><span class="line">	e.Encode(rf.currentTerm)</span><br><span class="line">	e.Encode(rf.voteFor)</span><br><span class="line">	e.Encode(rf.log)</span><br><span class="line">	e.Encode(rf.lastIncludedIndex)</span><br><span class="line">	e.Encode(rf.lastIncludedTerm)</span><br><span class="line">	data := w.Bytes()</span><br><span class="line">	rf.persister.SaveRaftState(data)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// restore previously persisted state.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">readPersist</span><span class="params">(data []<span class="keyword">byte</span>)</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> data == <span class="literal">nil</span> || <span class="built_in">len</span>(data) &lt; <span class="number">1</span> &#123; <span class="comment">// bootstrap without any state?</span></span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// Your code here (2C).</span></span><br><span class="line">	r := bytes.NewBuffer(data)</span><br><span class="line">	d := labgob.NewDecoder(r)</span><br><span class="line">	<span class="keyword">var</span> term <span class="keyword">int</span></span><br><span class="line">	<span class="keyword">var</span> votefor <span class="keyword">int</span></span><br><span class="line">	<span class="keyword">var</span> log []Log</span><br><span class="line">	<span class="keyword">var</span> lastIncludedIndex <span class="keyword">int</span></span><br><span class="line">	<span class="keyword">var</span> lastIncludedTerm <span class="keyword">int</span></span><br><span class="line">	<span class="keyword">if</span> d.Decode(&amp;term) != <span class="literal">nil</span> || d.Decode(&amp;votefor) != <span class="literal">nil</span> ||</span><br><span class="line">		d.Decode(&amp;log) != <span class="literal">nil</span> || d.Decode(&amp;lastIncludedIndex) != <span class="literal">nil</span> ||</span><br><span class="line">		d.Decode(&amp;lastIncludedTerm) != <span class="literal">nil</span> &#123;</span><br><span class="line">		DPrintf(<span class="string">&quot;readPersist error in server&quot;</span>)</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		rf.mu.Lock()</span><br><span class="line">		rf.currentTerm = term</span><br><span class="line">		rf.voteFor = votefor</span><br><span class="line">		rf.log = log</span><br><span class="line">		rf.lastIncludedIndex = lastIncludedIndex</span><br><span class="line">		rf.lastIncludedTerm = lastIncludedTerm</span><br><span class="line">		rf.commitIndex = rf.lastIncludedIndex</span><br><span class="line">		rf.lastApplied = rf.lastIncludedIndex</span><br><span class="line">		rf.mu.Unlock()</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> InstallSnapshotArgs <span class="keyword">struct</span> &#123;</span><br><span class="line">	Term              <span class="keyword">int</span>    <span class="comment">// leader’s term</span></span><br><span class="line">	LeaderId          <span class="keyword">int</span>    <span class="comment">// so follower can redirect clients</span></span><br><span class="line">	LastIncludedIndex <span class="keyword">int</span>    <span class="comment">// the snapshot replaces all entries up through and including this index</span></span><br><span class="line">	LastIncludedTerm  <span class="keyword">int</span>    <span class="comment">// term of lastIncludedIndex</span></span><br><span class="line">	Data              []<span class="keyword">byte</span> <span class="comment">// raw bytes of the snapshot chunk, starting atoffset</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> InstallSnapshotReply <span class="keyword">struct</span> &#123;</span><br><span class="line">	Term <span class="keyword">int</span> <span class="comment">// currentTerm, for leader to update itself</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">sendInstallSnapshot</span><span class="params">(server <span class="keyword">int</span>, args *InstallSnapshotArgs, reply *InstallSnapshotReply)</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">	ok := rf.peers[server].Call(<span class="string">&quot;Raft.InstallSnapshot&quot;</span>, args, reply)</span><br><span class="line">	<span class="keyword">return</span> ok</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">InstallSnapshot</span><span class="params">(args *InstallSnapshotArgs, reply *InstallSnapshotReply)</span></span> &#123;</span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%d] receive installSnapshot from [%d], snapshot is (%v)&quot;, rf.me, args.LeaderId, args.Data)</span></span><br><span class="line">	rf.mu.Lock()</span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%d] has got lock&quot;, rf.me)</span></span><br><span class="line">	reply.Term = rf.currentTerm</span><br><span class="line">	<span class="comment">// 1.Reply immediately if term &lt; currentTerm</span></span><br><span class="line">	<span class="keyword">if</span> args.Term &lt; rf.currentTerm &#123;</span><br><span class="line">		rf.mu.Unlock()</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%d] has finish 1 if&quot;, rf.me)</span></span><br><span class="line">	<span class="comment">// all server rule 1 If RPC request or response contains term T &gt; currentTerm:</span></span><br><span class="line">	<span class="comment">// set currentTerm = T, convert to follower (§5.1)</span></span><br><span class="line">	<span class="keyword">if</span> args.Term &gt; rf.currentTerm &#123;</span><br><span class="line">		rf.beFollower(args.Term)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// this gives the follower a sign of life with each chunk,</span></span><br><span class="line">	<span class="comment">// so it can reset its election timer.</span></span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%d] has finish 2 if&quot;, rf.me)</span></span><br><span class="line">	send(rf.appendLogCh)</span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%d] args.LastIncludedIndex: %d, rf.lastIncludedIndex: %d, args.LastIncludedTerm (%v)&quot;, rf.me, args.LastIncludedIndex, rf.lastIncludedIndex, args.LastIncludedTerm)</span></span><br><span class="line">	<span class="keyword">if</span> args.LastIncludedIndex &lt;= rf.lastIncludedIndex &#123;</span><br><span class="line">		rf.mu.Unlock()</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%d] has finish 4 if&quot;, rf.me)</span></span><br><span class="line">	applyMsg := ApplyMsg&#123;</span><br><span class="line">		CommandValid:  <span class="literal">false</span>,</span><br><span class="line">		Snapshot:      args.Data,</span><br><span class="line">		SnapshotTerm:  args.LastIncludedTerm,</span><br><span class="line">		SnapshotIndex: args.LastIncludedIndex,</span><br><span class="line">		SnapshotValid: <span class="literal">true</span>,</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%v], in applyMsg, args.LastIncludedTerm (%v)&quot;, rf.me, args.LastIncludedTerm)</span></span><br><span class="line"></span><br><span class="line">	rf.mu.Unlock()</span><br><span class="line">	rf.applyCh &lt;- applyMsg</span><br><span class="line">	<span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">CallInstallSnapshot</span><span class="params">(server <span class="keyword">int</span>)</span></span> &#123;</span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%d] sned snapshot to: %d&quot;, rf.me, server)</span></span><br><span class="line">	snapshot := rf.persister.ReadSnapshot()</span><br><span class="line"></span><br><span class="line">	args := InstallSnapshotArgs&#123;</span><br><span class="line">		Term:              rf.currentTerm,</span><br><span class="line">		LeaderId:          rf.me,</span><br><span class="line">		LastIncludedIndex: rf.lastIncludedIndex,</span><br><span class="line">		LastIncludedTerm:  rf.lastIncludedTerm,</span><br><span class="line">		Data:              snapshot,</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%d] rf.lastIncludedTerm: %d&quot;, rf.me, rf.lastIncludedTerm)</span></span><br><span class="line">	rf.mu.Unlock()</span><br><span class="line">	reply := &amp;InstallSnapshotReply&#123;&#125;</span><br><span class="line">	ok := rf.sendInstallSnapshot(server, &amp;args, reply)</span><br><span class="line">	rf.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> rf.mu.Unlock()</span><br><span class="line">	<span class="keyword">if</span> !ok || rf.state != Leader || rf.currentTerm != args.Term &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> reply.Term &gt; rf.currentTerm &#123;</span><br><span class="line">		rf.beFollower(reply.Term)</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	rf.updateNextIndex(rf.lastIncludedIndex, server)</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">updateNextIndex</span><span class="params">(lastIncludedIndex <span class="keyword">int</span>, server <span class="keyword">int</span>)</span></span> &#123;</span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%d] updatepdateNextIndex of (%d), rf.lastIncludedIndex: %v&quot;, rf.me, server, lastIncludedIndex)</span></span><br><span class="line">	rf.nextIndex[server] = lastIncludedIndex + <span class="number">1</span></span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%d] rf.nextIndex[%d]: %v&quot;, rf.me, server, rf.nextIndex[server])</span></span><br><span class="line">	rf.matchIndex[server] = lastIncludedIndex</span><br><span class="line">	rf.updateCommitIndex()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// A service wants to switch to snapshot.  Only do so if Raft hasn&#x27;t</span></span><br><span class="line"><span class="comment">// have more recent info since it communicate the snapshot on applyCh.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">CondInstallSnapshot</span><span class="params">(lastIncludedTerm <span class="keyword">int</span>, lastIncludedIndex <span class="keyword">int</span>, snapshot []<span class="keyword">byte</span>)</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">	<span class="comment">// Your code here (2D).</span></span><br><span class="line">	<span class="comment">// refuse to install a snapshot if it is an old snapshot</span></span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%d] starts CondInstallSnapshot(fake)&quot;, rf.me)</span></span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%v] in snapshot %v(fake)&quot;, rf.me, snapshot)</span></span><br><span class="line"></span><br><span class="line">	rf.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> rf.mu.Unlock()</span><br><span class="line">	<span class="keyword">if</span> lastIncludedIndex &lt;= rf.lastIncludedIndex &#123;</span><br><span class="line">		<span class="comment">// DPrintf(&quot;[%v] snapshot is too old %v, return false (fake)&quot;, rf.me, snapshot)</span></span><br><span class="line">		<span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%v] come here in snapshot (fake),lastIncludedTerm  : (%v)&quot;, rf.me, lastIncludedTerm)</span></span><br><span class="line">	<span class="comment">// 6.If existing log entry has same index and term as snapshot’s</span></span><br><span class="line">	<span class="comment">// last included entry, retain log entries following it and reply</span></span><br><span class="line">	<span class="keyword">if</span> lastIncludedIndex &lt; rf.logLen()<span class="number">-1</span> &#123;</span><br><span class="line">		rf.log = <span class="built_in">append</span>(<span class="built_in">make</span>([]Log, <span class="number">0</span>), rf.log[lastIncludedIndex-rf.lastIncludedIndex:]...)</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="comment">// 7.Discard the entire log</span></span><br><span class="line">		rf.log = []Log&#123;&#123;lastIncludedTerm, <span class="literal">nil</span>&#125;&#125;</span><br><span class="line">		<span class="comment">// DPrintf(&quot;[%v] CondInstallSnapshot() lastIncludedTerm is (%v)&quot;, rf.me, lastIncludedTerm)</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 8. Reset state machine using snapshot contents (and load</span></span><br><span class="line">	<span class="comment">// snapshot’s cluster configuration)</span></span><br><span class="line">	rf.lastIncludedIndex = lastIncludedIndex</span><br><span class="line">	rf.lastIncludedTerm = lastIncludedTerm</span><br><span class="line">	rf.persistWithSnapshot(snapshot)</span><br><span class="line">	rf.updateLastApplied()</span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%d] snapshot is vaild and CondInstallSnapshot is succeed!(fake)&quot;, rf.me)</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">persistWithSnapshot</span><span class="params">(snapshot []<span class="keyword">byte</span>)</span></span> &#123;</span><br><span class="line">	rf.persist()</span><br><span class="line">	rf.persister.SaveStateAndSnapshot(rf.persister.ReadRaftState(), snapshot)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// the service says it has created a snapshot that has</span></span><br><span class="line"><span class="comment">// all info up to and including index. this means the</span></span><br><span class="line"><span class="comment">// service no longer needs the log through (and including)</span></span><br><span class="line"><span class="comment">// that index. Raft should now trim its log as much as possible.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">Snapshot</span><span class="params">(index <span class="keyword">int</span>, snapshot []<span class="keyword">byte</span>)</span></span> &#123;</span><br><span class="line">	<span class="comment">// Your code here (2D).</span></span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%d] starts Snapshot&quot;, rf.me)</span></span><br><span class="line">	rf.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> rf.mu.Unlock()</span><br><span class="line">	<span class="keyword">if</span> index &lt;= rf.lastIncludedIndex &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%v] dosnapshot, rf.lastIncludedIndex:(%v) rf.lastIncludedTerm:(%v)&quot;, rf.me, rf.lastIncludedIndex, rf.lastIncludedTerm)</span></span><br><span class="line">	<span class="comment">// newLog := make([]Log, 0)</span></span><br><span class="line">	<span class="comment">// newLog = append(newLog, rf.log[index-rf.lastIncludedIndex:]...)</span></span><br><span class="line">	<span class="comment">// rf.log = newLog</span></span><br><span class="line">	rf.log = <span class="built_in">append</span>(<span class="built_in">make</span>([]Log, <span class="number">0</span>), rf.log[index-rf.lastIncludedIndex:]...)</span><br><span class="line">	rf.lastIncludedIndex = index</span><br><span class="line">	rf.lastIncludedTerm = rf.getLog(index).Term</span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%v] in snapshot %v&quot;, rf.me, snapshot)</span></span><br><span class="line">	rf.persistWithSnapshot(snapshot)</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// example RequestVote RPC arguments structure.</span></span><br><span class="line"><span class="comment">// field names must start with capital letters!</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="keyword">type</span> RequestVoteArgs <span class="keyword">struct</span> &#123;</span><br><span class="line">	<span class="comment">// Your data here (2A, 2B).</span></span><br><span class="line">	Term         <span class="keyword">int</span> <span class="comment">// candidate’s term</span></span><br><span class="line">	CandidateID  <span class="keyword">int</span> <span class="comment">// candidate requesting vote</span></span><br><span class="line">	LastLogIndex <span class="keyword">int</span> <span class="comment">// index of candidate’s last log entry</span></span><br><span class="line">	LastLogTerm  <span class="keyword">int</span> <span class="comment">// term of candidate’s last log entry</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// example RequestVote RPC reply structure.</span></span><br><span class="line"><span class="comment">// field names must start with capital letters!</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="keyword">type</span> RequestVoteReply <span class="keyword">struct</span> &#123;</span><br><span class="line">	<span class="comment">// Your data here (2A).</span></span><br><span class="line">	Term        <span class="keyword">int</span> <span class="comment">// currentTerm, for candidate to update itself</span></span><br><span class="line">	VoteGranted <span class="keyword">bool</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// AppendEntries RPC arguments structure.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="keyword">type</span> AppendEntriesArgs <span class="keyword">struct</span> &#123;</span><br><span class="line">	Term         <span class="keyword">int</span></span><br><span class="line">	LeaderId     <span class="keyword">int</span></span><br><span class="line">	PreLogIndex  <span class="keyword">int</span></span><br><span class="line">	PreLogTerm   <span class="keyword">int</span></span><br><span class="line">	Entries      []Log</span><br><span class="line">	LeaderCommit <span class="keyword">int</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// AppendEntries RPC reply structure.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="keyword">type</span> AppendEntriesReply <span class="keyword">struct</span> &#123;</span><br><span class="line">	Term          <span class="keyword">int</span></span><br><span class="line">	Success       <span class="keyword">bool</span></span><br><span class="line">	ConflictIndex <span class="keyword">int</span></span><br><span class="line">	ConflictTerm  <span class="keyword">int</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">getLog</span><span class="params">(i <span class="keyword">int</span>)</span> <span class="title">Log</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> rf.log[i-rf.lastIncludedIndex]</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">logLen</span><span class="params">()</span> <span class="title">int</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="built_in">len</span>(rf.log) + rf.lastIncludedIndex</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">getPreLogIndex</span><span class="params">(i <span class="keyword">int</span>)</span> <span class="title">int</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> rf.nextIndex[i] - <span class="number">1</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">getPreLogTerm</span><span class="params">(i <span class="keyword">int</span>)</span> <span class="title">int</span></span> &#123;</span><br><span class="line">	idx := rf.getPreLogIndex(i)</span><br><span class="line">	<span class="keyword">if</span> idx &lt; rf.lastIncludedIndex &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="number">-1</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> rf.getLog(idx).Term</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// append log to follower</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">callAppendEntries</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%d] start appending log.., term is %d&quot;, rf.me, rf.currentTerm)</span></span><br><span class="line">	<span class="keyword">for</span> server := <span class="number">0</span>; server &lt; <span class="built_in">len</span>(rf.peers); server++ &#123;</span><br><span class="line">		<span class="keyword">if</span> server == rf.me &#123;</span><br><span class="line">			<span class="keyword">continue</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">(server <span class="keyword">int</span>)</span></span> &#123;</span><br><span class="line">			<span class="keyword">for</span> &#123;</span><br><span class="line">				rf.mu.Lock()</span><br><span class="line">				<span class="keyword">if</span> rf.state != Leader &#123;</span><br><span class="line">					rf.mu.Unlock()</span><br><span class="line">					<span class="keyword">return</span></span><br><span class="line">				&#125;</span><br><span class="line">				<span class="comment">// The leader uses a new RPC called InstallSnapshot to</span></span><br><span class="line">				<span class="comment">// send snapshots to followers that are too far behind;</span></span><br><span class="line">				<span class="keyword">if</span> rf.nextIndex[server]-rf.lastIncludedIndex &lt; <span class="number">1</span> &#123;</span><br><span class="line">					<span class="comment">// DPrintf(&quot;[%d] rf.nextIndex[%d]: %d, rf.lastIncludedIndex: %d&quot;, rf.me, server, rf.nextIndex[server], rf.lastIncludedIndex)</span></span><br><span class="line">					<span class="comment">// DPrintf(&quot;[%d]&#x27;s log is too far behind, is (%d)&quot;, server, rf.nextIndex[server])</span></span><br><span class="line">					rf.CallInstallSnapshot(server)</span><br><span class="line">					<span class="keyword">return</span></span><br><span class="line">				&#125;</span><br><span class="line">				args := AppendEntriesArgs&#123;</span><br><span class="line">					Term:         rf.currentTerm,</span><br><span class="line">					LeaderId:     rf.me,</span><br><span class="line">					PreLogIndex:  rf.getPreLogIndex(server),</span><br><span class="line">					PreLogTerm:   rf.getPreLogTerm(server),</span><br><span class="line">					Entries:      <span class="built_in">append</span>([]Log&#123;&#125;, rf.log[rf.nextIndex[server]-rf.lastIncludedIndex:]...),</span><br><span class="line">					LeaderCommit: rf.commitIndex,</span><br><span class="line">				&#125;</span><br><span class="line">				rf.mu.Unlock()</span><br><span class="line">				<span class="comment">// DPrintf(&quot;[%d] has constructed the struct : AppendEntriesArgs&quot;, rf.me)</span></span><br><span class="line">				reply := &amp;AppendEntriesReply&#123;&#125;</span><br><span class="line">				ok := rf.sendAppendEntries(server, &amp;args, reply)</span><br><span class="line">				rf.mu.Lock()</span><br><span class="line"></span><br><span class="line">				<span class="keyword">if</span> !ok || rf.state != Leader || rf.currentTerm != args.Term &#123;</span><br><span class="line">					rf.mu.Unlock()</span><br><span class="line">					<span class="keyword">return</span></span><br><span class="line">				&#125;</span><br><span class="line">				<span class="comment">//DPrintf(&quot;[%d] has finished append entry to [%d]&quot;, rf.me, server)</span></span><br><span class="line">				<span class="keyword">if</span> reply.Term &gt; rf.currentTerm &#123;</span><br><span class="line">					rf.beFollower(reply.Term)</span><br><span class="line">					rf.mu.Unlock()</span><br><span class="line">					<span class="keyword">return</span></span><br><span class="line">				&#125;</span><br><span class="line"></span><br><span class="line">				<span class="keyword">if</span> reply.Success == <span class="literal">true</span> &#123;</span><br><span class="line">					rf.updateNextIndex(<span class="built_in">len</span>(args.Entries)+args.PreLogIndex, server)</span><br><span class="line"></span><br><span class="line">					rf.mu.Unlock()</span><br><span class="line">					<span class="comment">// DPrintf(&quot;[%d] after append log rf.nextIndex[%d]: %d, rf.lastIncludedIndex: %d&quot;, rf.me, server, rf.nextIndex[server], rf.lastIncludedIndex)</span></span><br><span class="line">					<span class="keyword">return</span></span><br><span class="line">				&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">					<span class="comment">// DPrintf(&quot;[%d] failed append log rf.nextIndex[%d]: %d, rf.lastIncludedIndex: %d&quot;, rf.me, server, rf.nextIndex[server], rf.lastIncludedIndex)</span></span><br><span class="line">					idx := reply.ConflictIndex</span><br><span class="line">					<span class="keyword">if</span> reply.ConflictTerm != <span class="number">-1</span> &#123;</span><br><span class="line">						<span class="keyword">for</span> i := rf.lastIncludedIndex; i &lt; rf.logLen(); i++ &#123;</span><br><span class="line">							<span class="keyword">if</span> rf.getLog(i).Term != reply.ConflictTerm &#123;</span><br><span class="line">								<span class="keyword">continue</span></span><br><span class="line">							&#125;</span><br><span class="line">							<span class="keyword">for</span> i &lt; rf.logLen() &amp;&amp; rf.getLog(i).Term == reply.ConflictTerm &#123;</span><br><span class="line">								i++</span><br><span class="line">							&#125;</span><br><span class="line">							idx = i</span><br><span class="line">						&#125;</span><br><span class="line">					&#125;</span><br><span class="line">					rf.nextIndex[server] = Min(idx, rf.logLen())</span><br><span class="line">					rf.mu.Unlock()</span><br><span class="line">				&#125;</span><br><span class="line"></span><br><span class="line">			&#125;</span><br><span class="line">		&#125;(server)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">updateCommitIndex</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%d] in updateCommitIndex(1) rf.nextIndex: %v, %v, %v&quot;, rf.me, rf.nextIndex[0], rf.nextIndex[1], rf.nextIndex[2])</span></span><br><span class="line">	rf.matchIndex[rf.me] = rf.logLen() - <span class="number">1</span></span><br><span class="line">	copyMatchIndex := <span class="built_in">make</span>([]<span class="keyword">int</span>, <span class="built_in">len</span>(rf.matchIndex))</span><br><span class="line">	<span class="built_in">copy</span>(copyMatchIndex, rf.matchIndex)</span><br><span class="line">	sort.Sort(sort.Reverse(sort.IntSlice(copyMatchIndex)))</span><br><span class="line">	N := copyMatchIndex[<span class="built_in">len</span>(copyMatchIndex)/<span class="number">2</span>]</span><br><span class="line">	<span class="keyword">if</span> N &gt; rf.commitIndex &amp;&amp; rf.getLog(N).Term == rf.currentTerm &#123;</span><br><span class="line">		rf.commitIndex = N</span><br><span class="line">		rf.updateLastApplied()</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%d] in updateCommitIndex(2) rf.nextIndex: %v, %v, %v&quot;, rf.me, rf.nextIndex[0], rf.nextIndex[1], rf.nextIndex[2])</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">updateLastApplied</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%v] rf.lastIncludedIndex is %v&quot;, rf.me, rf.lastIncludedIndex)</span></span><br><span class="line">	rf.commitIndex = Max(rf.commitIndex, rf.lastIncludedIndex)</span><br><span class="line">	rf.lastApplied = Max(rf.lastApplied, rf.lastIncludedIndex)</span><br><span class="line">	<span class="keyword">for</span> rf.commitIndex &gt; rf.lastApplied &#123;</span><br><span class="line">		rf.lastApplied++</span><br><span class="line">		curLog := rf.getLog(rf.lastApplied)</span><br><span class="line">		applyMsg := ApplyMsg&#123;</span><br><span class="line">			CommandValid:  <span class="literal">true</span>,</span><br><span class="line">			Command:       curLog.Command,</span><br><span class="line">			CommandIndex:  rf.lastApplied,</span><br><span class="line">			SnapshotValid: <span class="literal">false</span>,</span><br><span class="line">			Snapshot:      <span class="literal">nil</span>,</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// DPrintf(&quot;[%v] applyMsg.CommandIndex is %v&quot;, rf.me, applyMsg.CommandIndex)</span></span><br><span class="line">		rf.mu.Unlock()</span><br><span class="line">		rf.applyCh &lt;- applyMsg</span><br><span class="line">		rf.mu.Lock()</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// RPC</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">AppendEntries</span><span class="params">(args *AppendEntriesArgs, reply *AppendEntriesReply)</span></span> &#123;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%d] receive AppendEntries RPC from [%d], args.Term : (%d), rf.currentTerm : (%d)&quot;, rf.me, args.LeaderId, args.Term, rf.currentTerm)</span></span><br><span class="line">	rf.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> rf.mu.Unlock()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> args.Term &gt; rf.currentTerm &#123;</span><br><span class="line">		rf.beFollower(args.Term)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	send(rf.appendLogCh)</span><br><span class="line"></span><br><span class="line">	reply.Term = rf.currentTerm</span><br><span class="line">	reply.Success = <span class="literal">false</span></span><br><span class="line">	reply.ConflictIndex = <span class="number">0</span></span><br><span class="line">	reply.ConflictTerm = <span class="number">-1</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// 2. Reply false if log doesn’t contain an entry at prevLogIndex whose term matches prevLogTerm (§5.3)</span></span><br><span class="line">	preLogIndexTerm := <span class="number">-1</span></span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%v] args.PreLogIndex: (%v), rf.lastIncludedIndex: (%v), rf.logLen(): (%v)&quot;, rf.me, args.PreLogIndex, rf.lastIncludedIndex, rf.logLen())</span></span><br><span class="line">	<span class="keyword">if</span> args.PreLogIndex &gt;= rf.lastIncludedIndex &amp;&amp; args.PreLogIndex &lt; rf.logLen() &#123;</span><br><span class="line">		preLogIndexTerm = rf.getLog(args.PreLogIndex).Term</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> preLogIndexTerm != args.PreLogTerm &#123;</span><br><span class="line">		<span class="comment">// DPrintf(&quot;[%v] preLogIndexTerm: (%v) != args.PreLogTerm: (%v)&quot;, rf.me, preLogIndexTerm, args.PreLogTerm)</span></span><br><span class="line">		reply.ConflictIndex = rf.logLen()</span><br><span class="line">		<span class="keyword">if</span> preLogIndexTerm != <span class="number">-1</span> &#123;</span><br><span class="line">			reply.ConflictTerm = preLogIndexTerm</span><br><span class="line">			<span class="keyword">for</span> i := rf.lastIncludedIndex; i &lt; rf.logLen(); i++ &#123;</span><br><span class="line">				<span class="keyword">if</span> rf.getLog(i).Term == reply.ConflictTerm &#123;</span><br><span class="line">					reply.ConflictIndex = i</span><br><span class="line">					<span class="keyword">break</span></span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 1. Reply false if term &lt; currentTerm (§5.1)</span></span><br><span class="line">	<span class="keyword">if</span> args.Term &lt; rf.currentTerm &#123;</span><br><span class="line">		<span class="comment">// DPrintf(&quot;[%v] 1. Reply false if term &lt; currentTerm (§5.1) &quot;, rf.me)</span></span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 3. If an existing entry conflicts with a new one (same index</span></span><br><span class="line">	<span class="comment">// but different terms), delete the existing entry and all that</span></span><br><span class="line">	<span class="comment">// follow it (§5.3)</span></span><br><span class="line">	index := args.PreLogIndex</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="built_in">len</span>(args.Entries); i++ &#123;</span><br><span class="line">		index++</span><br><span class="line">		<span class="keyword">if</span> index &gt;= rf.logLen() &#123;</span><br><span class="line">			rf.log = <span class="built_in">append</span>(rf.log, args.Entries[i:]...)</span><br><span class="line">			rf.persist()</span><br><span class="line">			<span class="keyword">break</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// 4. Append any new entries not already in the log</span></span><br><span class="line">		<span class="keyword">if</span> rf.getLog(index).Term != args.Entries[i].Term &#123;</span><br><span class="line">			rf.log = rf.log[:index-rf.lastIncludedIndex]</span><br><span class="line">			rf.log = <span class="built_in">append</span>(rf.log, args.Entries[i:]...)</span><br><span class="line">			rf.persist()</span><br><span class="line">			<span class="keyword">break</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 5.. If leaderCommit &gt; commitIndex, set commitIndex = min(leaderCommit, index of last new entry)</span></span><br><span class="line">	<span class="keyword">if</span> args.LeaderCommit &gt; rf.commitIndex &#123;</span><br><span class="line">		rf.commitIndex = Min(args.LeaderCommit, rf.getLastLogIndex())</span><br><span class="line">		rf.updateLastApplied()</span><br><span class="line">	&#125;</span><br><span class="line">	reply.Success = <span class="literal">true</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// RPC</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">sendAppendEntries</span><span class="params">(server <span class="keyword">int</span>, args *AppendEntriesArgs, reply *AppendEntriesReply)</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">	ok := rf.peers[server].Call(<span class="string">&quot;Raft.AppendEntries&quot;</span>, args, reply)</span><br><span class="line">	<span class="keyword">return</span> ok</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">getLastLogIndex</span><span class="params">()</span> <span class="title">int</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> rf.logLen() - <span class="number">1</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">getLastLogTerm</span><span class="params">()</span> <span class="title">int</span></span> &#123;</span><br><span class="line">	idx := rf.getLastLogIndex()</span><br><span class="line">	<span class="keyword">if</span> idx &lt; rf.lastIncludedIndex &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="number">-1</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%d] rf.getLastLogTerm() is %d&quot;, rf.me, idx)</span></span><br><span class="line">	<span class="keyword">return</span> rf.getLog(idx).Term</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">beCandidate</span><span class="params">()</span></span> &#123;</span><br><span class="line">	rf.state = Candidate</span><br><span class="line">	rf.currentTerm++</span><br><span class="line">	rf.voteFor = rf.me</span><br><span class="line">	rf.persist()</span><br><span class="line">	<span class="keyword">go</span> rf.attemptElection()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">beFollower</span><span class="params">(term <span class="keyword">int</span>)</span></span> &#123;</span><br><span class="line">	rf.state = Follower</span><br><span class="line">	rf.currentTerm = term</span><br><span class="line">	rf.voteFor = <span class="number">-1</span></span><br><span class="line">	rf.persist()</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">beLeader</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> rf.state != Candidate &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	rf.state = Leader</span><br><span class="line"></span><br><span class="line">	rf.matchIndex = <span class="built_in">make</span>([]<span class="keyword">int</span>, <span class="built_in">len</span>(rf.peers))</span><br><span class="line">	rf.nextIndex = <span class="built_in">make</span>([]<span class="keyword">int</span>, <span class="built_in">len</span>(rf.peers))</span><br><span class="line">	<span class="keyword">for</span> i := <span class="keyword">range</span> rf.nextIndex &#123;</span><br><span class="line">		rf.nextIndex[i] = rf.getLastLogIndex() + <span class="number">1</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// start a election</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">attemptElection</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%d] start an election.., term is %d&quot;, rf.me, rf.currentTerm)</span></span><br><span class="line">	rf.mu.Lock()</span><br><span class="line">	args := RequestVoteArgs&#123;</span><br><span class="line">		Term:         rf.currentTerm,</span><br><span class="line">		CandidateID:  rf.me,</span><br><span class="line">		LastLogIndex: rf.getLastLogIndex(),</span><br><span class="line">		LastLogTerm:  rf.getLastLogTerm(),</span><br><span class="line">	&#125;</span><br><span class="line">	rf.mu.Unlock()</span><br><span class="line">	<span class="keyword">var</span> votes <span class="keyword">int32</span> = <span class="number">1</span></span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%d] args struct is constructed&quot;, rf.me)</span></span><br><span class="line">	<span class="keyword">for</span> server := <span class="number">0</span>; server &lt; <span class="built_in">len</span>(rf.peers); server++ &#123;</span><br><span class="line">		<span class="keyword">if</span> server == rf.me &#123;</span><br><span class="line">			<span class="keyword">continue</span></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">(server <span class="keyword">int</span>)</span></span> &#123;</span><br><span class="line">			reply := &amp;RequestVoteReply&#123;&#125;</span><br><span class="line">			<span class="comment">// DPrintf(&quot;[%d] send request vote to [%d]&quot;, rf.me, server)</span></span><br><span class="line">			voteGranted := rf.sendRequestVote(server, &amp;args, reply)</span><br><span class="line"></span><br><span class="line">			<span class="keyword">if</span> !voteGranted &#123;</span><br><span class="line">				<span class="comment">// DPrintf(&quot;[%d] (%d) refuse to vote for me..&quot;, rf.me, server)</span></span><br><span class="line">				<span class="keyword">return</span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="comment">// DPrintf(&quot;[%d] has send Requestvote RPC to [%d]&quot;, rf.me, server)</span></span><br><span class="line">			rf.mu.Lock()</span><br><span class="line">			<span class="keyword">defer</span> rf.mu.Unlock()</span><br><span class="line">			<span class="keyword">if</span> reply.Term &gt; rf.currentTerm &#123;</span><br><span class="line">				rf.beFollower(reply.Term)</span><br><span class="line">				<span class="comment">// DPrintf(&quot;[%d] %d&#x27;s term is bigger than me, be a follower&quot;, rf.me, server)</span></span><br><span class="line">				<span class="keyword">return</span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span> rf.state != Candidate || rf.currentTerm != args.Term &#123;</span><br><span class="line">				<span class="keyword">return</span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span> reply.VoteGranted &#123;</span><br><span class="line">				atomic.AddInt32(&amp;votes, <span class="number">1</span>)</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="comment">// DPrintf(&quot;[%d] got vote from server [%d]&quot;, rf.me, server)</span></span><br><span class="line">			<span class="keyword">if</span> atomic.LoadInt32(&amp;votes) &gt; <span class="keyword">int32</span>(<span class="built_in">len</span>(rf.peers)/<span class="number">2</span>) &#123;</span><br><span class="line">				rf.beLeader()</span><br><span class="line">				<span class="comment">//rf.callAppendEntries()</span></span><br><span class="line">				<span class="comment">// DPrintf(&quot;[%d] be leader now, has %d follower&quot;, rf.me, len(rf.peers)-1)</span></span><br><span class="line">				send(rf.voteCh)</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;(server)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// example RequestVote RPC handler.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">RequestVote</span><span class="params">(args *RequestVoteArgs, reply *RequestVoteReply)</span></span> &#123;</span><br><span class="line">	<span class="comment">// Your code here (2A, 2B).</span></span><br><span class="line">	<span class="comment">// DPrintf(&quot;[%d] receive RequestVote from (%d), his term is (%d)&quot;, rf.me, args.CandidateID, args.Term)</span></span><br><span class="line">	rf.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> rf.mu.Unlock()</span><br><span class="line">	<span class="keyword">if</span> args.Term &gt; rf.currentTerm &#123;</span><br><span class="line">		rf.beFollower(args.Term)</span><br><span class="line">		send(rf.voteCh)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	reply.VoteGranted = <span class="literal">false</span></span><br><span class="line">	reply.Term = rf.currentTerm</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> args.Term &lt; rf.currentTerm &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> rf.voteFor != <span class="number">-1</span> &amp;&amp; rf.voteFor != args.CandidateID &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> args.LastLogTerm &lt; rf.getLastLogTerm() &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> args.LastLogTerm == rf.getLastLogTerm() &amp;&amp; args.LastLogIndex &lt; rf.getLastLogIndex() &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	rf.state = Follower</span><br><span class="line">	rf.voteFor = args.CandidateID</span><br><span class="line">	reply.VoteGranted = <span class="literal">true</span></span><br><span class="line">	rf.persist()</span><br><span class="line">	send(rf.voteCh)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">send</span><span class="params">(ch <span class="keyword">chan</span> <span class="keyword">bool</span>)</span></span> &#123;</span><br><span class="line">	<span class="keyword">select</span> &#123;</span><br><span class="line">	<span class="keyword">case</span> &lt;-ch:</span><br><span class="line">	<span class="keyword">default</span>:</span><br><span class="line">	&#125;</span><br><span class="line">	ch &lt;- <span class="literal">true</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// example code to send a RequestVote RPC to a server.</span></span><br><span class="line"><span class="comment">// server is the index of the target server in rf.peers[].</span></span><br><span class="line"><span class="comment">// expects RPC arguments in args.</span></span><br><span class="line"><span class="comment">// fills in *reply with RPC reply, so caller should</span></span><br><span class="line"><span class="comment">// pass &amp;reply.</span></span><br><span class="line"><span class="comment">// the types of the args and reply passed to Call() must be</span></span><br><span class="line"><span class="comment">// the same as the types of the arguments declared in the</span></span><br><span class="line"><span class="comment">// handler function (including whether they are pointers).</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// The labrpc package simulates a lossy network, in which servers</span></span><br><span class="line"><span class="comment">// may be unreachable, and in which requests and replies may be lost.</span></span><br><span class="line"><span class="comment">// Call() sends a request and waits for a reply. If a reply arrives</span></span><br><span class="line"><span class="comment">// within a timeout interval, Call() returns true; otherwise</span></span><br><span class="line"><span class="comment">// Call() returns false. Thus Call() may not return for a while.</span></span><br><span class="line"><span class="comment">// A false return can be caused by a dead server, a live server that</span></span><br><span class="line"><span class="comment">// can&#x27;t be reached, a lost request, or a lost reply.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// Call() is guaranteed to return (perhaps after a delay) *except* if the</span></span><br><span class="line"><span class="comment">// handler function on the server side does not return.  Thus there</span></span><br><span class="line"><span class="comment">// is no need to implement your own timeouts around Call().</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// look at the comments in ../labrpc/labrpc.go for more details.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// if you&#x27;re having trouble getting RPC to work, check that you&#x27;ve</span></span><br><span class="line"><span class="comment">// capitalized all field names in structs passed over RPC, and</span></span><br><span class="line"><span class="comment">// that the caller passes the address of the reply struct with &amp;, not</span></span><br><span class="line"><span class="comment">// the struct itself.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">sendRequestVote</span><span class="params">(server <span class="keyword">int</span>, args *RequestVoteArgs, reply *RequestVoteReply)</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">	ok := rf.peers[server].Call(<span class="string">&quot;Raft.RequestVote&quot;</span>, args, reply)</span><br><span class="line">	<span class="keyword">return</span> ok</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// the service using Raft (e.g. a k/v server) wants to start</span></span><br><span class="line"><span class="comment">// agreement on the next command to be appended to Raft&#x27;s log. if this</span></span><br><span class="line"><span class="comment">// server isn&#x27;t the leader, returns false. otherwise start the</span></span><br><span class="line"><span class="comment">// agreement and return immediately. there is no guarantee that this</span></span><br><span class="line"><span class="comment">// command will ever be committed to the Raft log, since the leader</span></span><br><span class="line"><span class="comment">// may fail or lose an election. even if the Raft instance has been killed,</span></span><br><span class="line"><span class="comment">// this function should return gracefully.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// the first return value is the index that the command will appear at</span></span><br><span class="line"><span class="comment">// if it&#x27;s ever committed. the second return value is the current</span></span><br><span class="line"><span class="comment">// term. the third return value is true if this server believes it is</span></span><br><span class="line"><span class="comment">// the leader.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">Start</span><span class="params">(command <span class="keyword">interface</span>&#123;&#125;)</span> <span class="params">(<span class="keyword">int</span>, <span class="keyword">int</span>, <span class="keyword">bool</span>)</span></span> &#123;</span><br><span class="line"></span><br><span class="line">	rf.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> rf.mu.Unlock()</span><br><span class="line">	index := <span class="number">-1</span></span><br><span class="line">	term := rf.currentTerm</span><br><span class="line">	isLeader := (rf.state == Leader)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Your code here (2B).</span></span><br><span class="line">	<span class="keyword">if</span> isLeader &#123;</span><br><span class="line">		index = rf.getLastLogIndex() + <span class="number">1</span></span><br><span class="line">		newLog := Log&#123;</span><br><span class="line">			Term:    rf.currentTerm,</span><br><span class="line">			Command: command,</span><br><span class="line">		&#125;</span><br><span class="line">		rf.log = <span class="built_in">append</span>(rf.log, newLog)</span><br><span class="line">		rf.persist()</span><br><span class="line">		<span class="comment">// rf.callAppendEntries()</span></span><br><span class="line">		<span class="comment">// DPrintf(&quot;[%d] in Start(), rf.currentTerm : (%v)&quot;, rf.me, rf.currentTerm)</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> index, term, isLeader</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// the tester doesn&#x27;t halt goroutines created by Raft after each test,</span></span><br><span class="line"><span class="comment">// but it does call the Kill() method. your code can use killed() to</span></span><br><span class="line"><span class="comment">// check whether Kill() has been called. the use of atomic avoids the</span></span><br><span class="line"><span class="comment">// need for a lock.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// the issue is that long-running goroutines use memory and may chew</span></span><br><span class="line"><span class="comment">// up CPU time, perhaps causing later tests to fail and generating</span></span><br><span class="line"><span class="comment">// confusing debug output. any goroutine with a long-running loop</span></span><br><span class="line"><span class="comment">// should call killed() to check whether it should stop.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">Kill</span><span class="params">()</span></span> &#123;</span><br><span class="line">	atomic.StoreInt32(&amp;rf.dead, <span class="number">1</span>)</span><br><span class="line">	<span class="comment">// Your code here, if desired.</span></span><br><span class="line">	<span class="comment">//send(rf.killCh)</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">killed</span><span class="params">()</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">	z := atomic.LoadInt32(&amp;rf.dead)</span><br><span class="line">	<span class="keyword">return</span> z == <span class="number">1</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// The ticker go routine starts a new election if this peer hasn&#x27;t received</span></span><br><span class="line"><span class="comment">// heartsbeats recently.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">ticker</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">for</span> rf.killed() == <span class="literal">false</span> &#123;</span><br><span class="line"></span><br><span class="line">		heartsbeatTime := time.Duration(rand.Intn(<span class="number">100</span>)) * time.Millisecond</span><br><span class="line">		<span class="comment">// Your code here to check if a leader election should</span></span><br><span class="line">		<span class="comment">// be started and to randomize sleeping time using</span></span><br><span class="line">		<span class="comment">// time.Sleep().</span></span><br><span class="line">		electionTimeout := time.Duration(rand.Intn(<span class="number">100</span>)+<span class="number">150</span>) * time.Millisecond</span><br><span class="line">		<span class="comment">// DPrintf(&quot;[%d] electionTimeout is %d&quot;, rf.me, electionTimeout)</span></span><br><span class="line">		rf.mu.Lock()</span><br><span class="line">		state := rf.state</span><br><span class="line">		rf.mu.Unlock()</span><br><span class="line"></span><br><span class="line">		<span class="keyword">switch</span> state &#123;</span><br><span class="line">		<span class="keyword">case</span> Follower, Candidate:</span><br><span class="line">			<span class="keyword">select</span> &#123;</span><br><span class="line">			<span class="keyword">case</span> &lt;-rf.voteCh:</span><br><span class="line">				<span class="comment">// DPrintf(&quot;[%d] receive from voteCh&quot;, rf.me)</span></span><br><span class="line">			<span class="keyword">case</span> &lt;-rf.appendLogCh:</span><br><span class="line">				<span class="comment">// DPrintf(&quot;[%d] receive from appendLogCh&quot;, rf.me)</span></span><br><span class="line">			<span class="keyword">case</span> &lt;-time.After(electionTimeout):</span><br><span class="line">				rf.mu.Lock()</span><br><span class="line">				rf.beCandidate()</span><br><span class="line">				rf.mu.Unlock()</span><br><span class="line">			&#125;</span><br><span class="line">		<span class="keyword">case</span> Leader:</span><br><span class="line">			rf.callAppendEntries()</span><br><span class="line">			time.Sleep(heartsbeatTime)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// the service or tester wants to create a Raft server. the ports</span></span><br><span class="line"><span class="comment">// of all the Raft servers (including this one) are in peers[]. this</span></span><br><span class="line"><span class="comment">// server&#x27;s port is peers[me]. all the servers&#x27; peers[] arrays</span></span><br><span class="line"><span class="comment">// have the same order. persister is a place for this server to</span></span><br><span class="line"><span class="comment">// save its persistent state, and also initially holds the most</span></span><br><span class="line"><span class="comment">// recent saved state, if any. applyCh is a channel on which the</span></span><br><span class="line"><span class="comment">// tester or service expects Raft to send ApplyMsg messages.</span></span><br><span class="line"><span class="comment">// Make() must return quickly, so it should start goroutines</span></span><br><span class="line"><span class="comment">// for any long-running work.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Make</span><span class="params">(peers []*labrpc.ClientEnd, me <span class="keyword">int</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">	persister *Persister, applyCh <span class="keyword">chan</span> ApplyMsg)</span> *<span class="title">Raft</span></span> &#123;</span><br><span class="line">	rf := &amp;Raft&#123;&#125;</span><br><span class="line">	rf.peers = peers</span><br><span class="line">	rf.persister = persister</span><br><span class="line">	rf.me = me</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Your initialization code here (2A, 2B, 2C).</span></span><br><span class="line">	rf.currentTerm = <span class="number">0</span></span><br><span class="line">	rf.voteFor = <span class="number">-1</span></span><br><span class="line">	rf.log = <span class="built_in">make</span>([]Log, <span class="number">1</span>)</span><br><span class="line">	rf.state = Follower</span><br><span class="line"></span><br><span class="line">	rf.appendLogCh = <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">bool</span>, <span class="number">1</span>)</span><br><span class="line">	rf.voteCh = <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">bool</span>, <span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">	rf.applyCh = applyCh</span><br><span class="line"></span><br><span class="line">	rf.matchIndex = <span class="built_in">make</span>([]<span class="keyword">int</span>, <span class="built_in">len</span>(rf.peers))</span><br><span class="line">	rf.nextIndex = <span class="built_in">make</span>([]<span class="keyword">int</span>, <span class="built_in">len</span>(rf.peers))</span><br><span class="line"></span><br><span class="line">	rf.commitIndex = <span class="number">0</span></span><br><span class="line">	rf.lastApplied = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// initialize from state persisted before a crash</span></span><br><span class="line">	rf.readPersist(persister.ReadRaftState())</span><br><span class="line"></span><br><span class="line">	<span class="comment">// start ticker goroutine to start elections</span></span><br><span class="line">	<span class="keyword">go</span> rf.ticker()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> rf</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+      
+    </div>
+    
+    
+    
+    <div>
+      
+        <div>
+    
+        <div style="text-align:center;color: #ccc;font-size:14px;">-------------本文结束<i class="fa fa-paw"></i>感谢您的阅读-------------</div>
+    
+</div>
+      
+    </div>
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2021/03/30/MIT-6.824%20Part%202A%20leader%20election(moderate)/" rel="next" title="">
+                <i class="fa fa-chevron-left"></i> 
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+    <script>
+      window.onload = function(){
+        var valine = new Valine();
+        valine.init({
+          el: '#vcomments',
+          appId: "<%= theme.v_appId %>",
+          appKey: "<%= theme.v_appKey %>",
+          path: window.location.pathname,
+          placeholder: "你是我一生只会遇见一次的惊喜 ...",
+          avatar:'wavatar', //用不同面孔和背景组合生成的头像
+          notify: true, // 邮件提醒!!!
+          verify: true, // 验证码
+          })
+      }
+    </script>
+    </div>
+    
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/uploads/1.jpg"
+                alt="别云" />
+            
+              <p class="site-author-name" itemprop="name">别云</p>
+              <p class="site-description motion-element" itemprop="description">快乐是奢侈品</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">4</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+          <!--
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+          -->
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/evil-must" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:15896677856@163.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+          
+<div id="music163player">
+  <!--网易云插件-->
+    <iframe frameborder="no" border="0" marginwidth="0" marginheight="0" width=330 height=86
+     src="//music.163.com/outchain/player?type=2&id=22803364&auto=0&height=66"></iframe>
+</div>
+
+  <div class="links-of-blogroll motion-element links-of-blogroll-block">
+    <div class="links-of-blogroll-title">
+      <!-- modify icon to fire by szw -->
+      <i class="fa fa-history fa-" aria-hidden="true"></i>
+      近期文章
+    </div>
+    <ul class="links-of-blogroll-list">
+      
+      
+        <li class="recent_posts_li">
+          <a href="/2021/03/30/MIT-6.824%20Part%202D%20log%20compaction%20(hard)/" title="" target="_blank"></a>
+        </li>
+      
+        <li class="recent_posts_li">
+          <a href="/2021/03/30/MIT-6.824%20Part%202A%20leader%20election(moderate)/" title="" target="_blank"></a>
+        </li>
+      
+        <li class="recent_posts_li">
+          <a href="/2021/03/30/%E8%BF%91%E6%9C%9F%E9%9D%A2%E8%AF%95%E6%80%BB%E7%BB%93/" title="近期面试总结" target="_blank">近期面试总结</a>
+        </li>
+      
+        <li class="recent_posts_li">
+          <a href="/2021/03/30/%E6%88%91%E7%9A%84%202020/" title="我的 2020" target="_blank">我的 2020</a>
+        </li>
+      
+        <li class="recent_posts_li">
+          <a href="/2021/02/05/LAB%206%20%E7%BD%91%E7%BB%9C%E9%A9%B1%E5%8A%A8/" title="网络驱动" target="_blank">网络驱动</a>
+        </li>
+      
+    </ul>
+  </div>
+
+
+
+          
+          
+
+          
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#MIT-6-824-Part-2D-log-compaction-hard"><span class="nav-number">1.</span> <span class="nav-text">MIT-6.824 Part 2D: log compaction (hard)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E6%8C%81%E4%B9%85%E5%8C%96%E5%BF%AB%E7%85%A7%E5%8F%98%E9%87%8F"><span class="nav-number">1.0.1.</span> <span class="nav-text">1 持久化快照变量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-InstallSnapshot-RPC"><span class="nav-number">1.0.2.</span> <span class="nav-text">2 InstallSnapshot RPC</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E6%88%AA%E5%8F%96%E5%BF%AB%E7%85%A7"><span class="nav-number">1.0.3.</span> <span class="nav-text">3 截取快照</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E5%AE%89%E8%A3%85%E5%BF%AB%E7%85%A7"><span class="nav-number">1.0.4.</span> <span class="nav-text">4 安装快照</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-%E6%A3%80%E6%9F%A5-Follower-%E6%97%A5%E5%BF%97%E6%98%AF%E5%90%A6%E8%BF%87%E4%BA%8E%E8%90%BD%E5%90%8E"><span class="nav-number">1.0.5.</span> <span class="nav-text">5 检查 Follower 日志是否过于落后</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-%E6%B5%8B%E8%AF%95-go-test-run-2D"><span class="nav-number">1.0.6.</span> <span class="nav-text">6 测试 go test -run 2D</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-%E6%B5%8B%E8%AF%95-go-test-run-2D-race"><span class="nav-number">1.0.7.</span> <span class="nav-text">7 测试 go test -run 2D -race</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#8-%E5%B0%9D%E8%AF%95%E5%8A%A0%E9%94%81"><span class="nav-number">1.0.8.</span> <span class="nav-text">8 尝试加锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#9-%E5%AE%8C%E6%95%B4%E6%B5%8B%E8%AF%95%EF%BC%882A-2B-2C-2D%EF%BC%89"><span class="nav-number">1.0.9.</span> <span class="nav-text">9 完整测试（2A+2B+2C+2D）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#10-%E9%99%84%E4%B8%8A%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81"><span class="nav-number">1.0.10.</span> <span class="nav-text">10 附上完整代码</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+<div class="copyright">&copy; 2020 &mdash; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">别云</span>
+  
+</div>
+只有行云忘不却, 追随着流水奔腾<br>
+<div class="powered-by">
+  <i class="fa fa-user-md"></i><span id="busuanzi_container_site_uv">
+    本站访客数:<span id="busuanzi_value_site_uv"></span>
+  </span>
+</div>
+<!--
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+
+
+-->
+
+<div class="theme-info">
+  <div class="powered-by"></div>
+  <span class="post-count">博客全站共75.8k字</span>
+</div>
+<br>
+<!-- 网站运行时间的设置 -->
+<span id="timeDate">载入天数...</span>
+<span id="times">载入时分秒...</span>
+<script>
+    var now = new Date();
+    function createtime() {
+        var grt= new Date("12/01/2020 13:14:21");//此处修改你的建站时间或者网站上线时间
+        now.setTime(now.getTime()+250);
+        days = (now - grt ) / 1000 / 60 / 60 / 24; dnum = Math.floor(days);
+        hours = (now - grt ) / 1000 / 60 / 60 - (24 * dnum); hnum = Math.floor(hours);
+        if(String(hnum).length ==1 ){hnum = "0" + hnum;} minutes = (now - grt ) / 1000 /60 - (24 * 60 * dnum) - (60 * hnum);
+        mnum = Math.floor(minutes); if(String(mnum).length ==1 ){mnum = "0" + mnum;}
+        seconds = (now - grt ) / 1000 - (24 * 60 * 60 * dnum) - (60 * 60 * hnum) - (60 * mnum);
+        snum = Math.round(seconds); if(String(snum).length ==1 ){snum = "0" + snum;}
+        document.getElementById("timeDate").innerHTML = "本站已安全运行 "+dnum+" 天 ";
+        document.getElementById("times").innerHTML = hnum + " 小时 " + mnum + " 分 " + snum + " 秒";
+    }
+setInterval("createtime()",250);
+</script>
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+  </div>
+  
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/three/three.min.js"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/three/three-waves.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  
+  <script type="text/javascript">
+    var GUEST = ['nick','mail','link'];
+    var guest = 'nick,mail';
+    guest = guest.split(',').filter(item=>{
+      return GUEST.indexOf(item)>-1;
+    });
+    new Valine({
+        el: '#comments' ,
+        verify: true,
+        notify: true,
+        appId: 'y8UDCfGVDHBgEMFSGqOzHUwq-gzGzoHsz',
+        appKey: 'rWYiG4yjCtJ6Hd9eJegMbUgs',
+        placeholder: '没有独立思想的世界没有自由',
+        avatar:'mm',
+        guest_info:guest,
+        pageSize:'10' || 10,
+    });
+  </script>
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+  <script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.4.js"></script>
+  <script>AV.initialize("y8UDCfGVDHBgEMFSGqOzHUwq-gzGzoHsz", "rWYiG4yjCtJ6Hd9eJegMbUgs");</script>
+  <script>
+    function showTime(Counter) {
+      var query = new AV.Query(Counter);
+      var entries = [];
+      var $visitors = $(".leancloud_visitors");
+
+      $visitors.each(function () {
+        entries.push( $(this).attr("id").trim() );
+      });
+
+      query.containedIn('url', entries);
+      query.find()
+        .done(function (results) {
+          var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+          if (results.length === 0) {
+            $visitors.find(COUNT_CONTAINER_REF).text(0);
+            return;
+          }
+
+          for (var i = 0; i < results.length; i++) {
+            var item = results[i];
+            var url = item.get('url');
+            var time = item.get('time');
+            var element = document.getElementById(url);
+
+            $(element).find(COUNT_CONTAINER_REF).text(time);
+          }
+          for(var i = 0; i < entries.length; i++) {
+            var url = entries[i];
+            var element = document.getElementById(url);
+            var countSpan = $(element).find(COUNT_CONTAINER_REF);
+            if( countSpan.text() == '') {
+              countSpan.text(0);
+            }
+          }
+        })
+        .fail(function (object, error) {
+          console.log("Error: " + error.code + " " + error.message);
+        });
+    }
+
+    function addCount(Counter) {
+      var $visitors = $(".leancloud_visitors");
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+      var query = new AV.Query(Counter);
+
+      query.equalTo("url", url);
+      query.find({
+        success: function(results) {
+          if (results.length > 0) {
+            var counter = results[0];
+            counter.fetchWhenSave(true);
+            counter.increment("time");
+            counter.save(null, {
+              success: function(counter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.get('time'));
+              },
+              error: function(counter, error) {
+                console.log('Failed to save Visitor num, with error message: ' + error.message);
+              }
+            });
+          } else {
+            var newcounter = new Counter();
+            /* Set ACL */
+            var acl = new AV.ACL();
+            acl.setPublicReadAccess(true);
+            acl.setPublicWriteAccess(true);
+            newcounter.setACL(acl);
+            /* End Set ACL */
+            newcounter.set("title", title);
+            newcounter.set("url", url);
+            newcounter.set("time", 1);
+            newcounter.save(null, {
+              success: function(newcounter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+              },
+              error: function(newcounter, error) {
+                console.log('Failed to create');
+              }
+            });
+          }
+        },
+        error: function(error) {
+          console.log('Error:' + error.code + " " + error.message);
+        }
+      });
+    }
+
+    $(function() {
+      var Counter = AV.Object.extend("Counter");
+      if ($('.leancloud_visitors').length == 1) {
+        addCount(Counter);
+      } else if ($('.post-title-link').length > 1) {
+        showTime(Counter);
+      }
+    });
+  </script>
+
+
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"left","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>

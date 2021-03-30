@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+  
+  
+    
+    
+  <script src="/lib/pace/pace.min.js?v=1.0.2"></script>
+  <link href="/lib/pace/pace-theme-minimal.min.css?v=1.0.2" rel="stylesheet">
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="明日边缘" type="application/atom+xml" />
+
+
+
+
+
+
+<meta name="description" content="MIT-6.824 Part 2A: leader election(moderate)2021 年的 lab 有一些改动，其中 lab 2 变成了四个部分。 TASK 实现 Raft 领导选举和心跳（没有日志条目的 RPCs）。2A 部分的目标是选出一位领导人，如果没有失败，领导人将继续担任领导人，如果旧领导人失败或旧领导人的数据包丢失，则由新领导人接手。  1 Raft struct根据 fi">
+<meta property="og:type" content="article">
+<meta property="og:title" content="明日边缘">
+<meta property="og:url" content="http://evil-must.github.io/2021/03/30/MIT-6.824%20Part%202A%20leader%20election(moderate)/index.html">
+<meta property="og:site_name" content="明日边缘">
+<meta property="og:description" content="MIT-6.824 Part 2A: leader election(moderate)2021 年的 lab 有一些改动，其中 lab 2 变成了四个部分。 TASK 实现 Raft 领导选举和心跳（没有日志条目的 RPCs）。2A 部分的目标是选出一位领导人，如果没有失败，领导人将继续担任领导人，如果旧领导人失败或旧领导人的数据包丢失，则由新领导人接手。  1 Raft struct根据 fi">
+<meta property="og:locale">
+<meta property="article:published_time" content="2021-03-30T06:20:57.563Z">
+<meta property="article:modified_time" content="2021-03-05T12:45:32.215Z">
+<meta property="article:author" content="别云">
+<meta property="article:tag" content="code, game">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"always","offset":12,"b2t":false,"scrollpercent":true,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://evil-must.github.io/2021/03/30/MIT-6.824 Part 2A leader election(moderate)/"/>
+
+
+
+
+
+  <title> | 明日边缘</title>
+  
+
+
+
+
+
+  <script type="text/javascript">
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?6ed4c7d747139160a38d3f510c1cf801";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+<meta name="generator" content="Hexo 5.1.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">明日边缘</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">唯有生命中的黄金岁月一去就不再来</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-留言板">
+          <a href="/contact/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-question-circle"></i> <br />
+            
+            留言板
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br />
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off"
+             placeholder="搜索..." spellcheck="false"
+             type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://evil-must.github.io/2021/03/30/MIT-6.824%20Part%202A%20leader%20election(moderate)/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="别云">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/uploads/1.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="明日边缘">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline"></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2021-03-30T14:20:57+08:00">
+                2021-03-30
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2021/03/30/MIT-6.824%20Part%202A%20leader%20election(moderate)/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2021/03/30/MIT-6.824%20Part%202A%20leader%20election(moderate)/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+             <span id="/2021/03/30/MIT-6.824%20Part%202A%20leader%20election(moderate)/" class="leancloud_visitors" data-flag-title="">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">热度&#58;</span>
+               
+                 <span class="leancloud-visitors-count"></span>
+                 <span>℃</span>
+             </span>
+          
+
+          
+
+          
+            <div class="post-wordcount">
+              
+                
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">字数统计&#58;</span>
+                
+                <span title="字数统计">
+                  1.5k 字
+                </span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">阅读时长 &asymp;</span>
+                
+                <span title="阅读时长">
+                  7 分钟
+                </span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="MIT-6-824-Part-2A-leader-election-moderate"><a href="#MIT-6-824-Part-2A-leader-election-moderate" class="headerlink" title="MIT-6.824 Part 2A: leader election(moderate)"></a>MIT-6.824 Part 2A: leader election(moderate)</h1><p>2021 年的 lab 有一些改动，其中 lab 2 变成了四个部分。</p>
+<h3 id="TASK"><a href="#TASK" class="headerlink" title="TASK"></a>TASK</h3><blockquote>
+<p>实现 Raft 领导选举和心跳（没有日志条目的 RPCs）。2A 部分的目标是选出一位领导人，如果没有失败，领导人将继续担任领导人，如果旧领导人失败或旧领导人的数据包丢失，则由新领导人接手。</p>
+</blockquote>
+<h3 id="1-Raft-struct"><a href="#1-Raft-struct" class="headerlink" title="1 Raft struct"></a>1 Raft struct</h3><p>根据 figure 2 向 Raft 结构体添加变量。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Raft <span class="keyword">struct</span> &#123;</span><br><span class="line">    <span class="comment">// Persistent state on all servers:</span></span><br><span class="line">	voteFor     <span class="keyword">int</span>   <span class="comment">// 本机将票投给了谁</span></span><br><span class="line">	currentTerm <span class="keyword">int</span>   <span class="comment">// 任期</span></span><br><span class="line">	log         []Log <span class="comment">// 日志</span></span><br><span class="line">    </span><br><span class="line">    <span class="comment">// some channels</span></span><br><span class="line">	applyCh <span class="keyword">chan</span> ApplyMsg	</span><br><span class="line"></span><br><span class="line">	voteCh      <span class="keyword">chan</span> <span class="keyword">bool</span> <span class="comment">// 传递投票信号</span></span><br><span class="line">	appendLogCh <span class="keyword">chan</span> <span class="keyword">bool</span> <span class="comment">// 传递附加日志信号</span></span><br><span class="line">    </span><br><span class="line">    <span class="comment">// Volatile state on all servers:</span></span><br><span class="line">	commitIndex <span class="keyword">int</span></span><br><span class="line">	lastApplied <span class="keyword">int</span></span><br><span class="line">	state       <span class="keyword">int</span> <span class="comment">// 本机的状态 follower、leader or candidate</span></span><br><span class="line">    </span><br><span class="line">    <span class="comment">// Volatile state on leaders:</span></span><br><span class="line">	<span class="comment">// (Reinitialized after election)</span></span><br><span class="line">	nextIndex  []<span class="keyword">int</span></span><br><span class="line">	matchIndex []<span class="keyword">int</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// some constant</span></span><br><span class="line"><span class="keyword">const</span> (</span><br><span class="line">	Follower  <span class="keyword">int</span> = <span class="number">1</span></span><br><span class="line">	Candidate <span class="keyword">int</span> = <span class="number">2</span></span><br><span class="line">	Leader    <span class="keyword">int</span> = <span class="number">3</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">// Log struct</span></span><br><span class="line"><span class="keyword">type</span> Log <span class="keyword">struct</span> &#123;</span><br><span class="line">	Term    <span class="keyword">int</span></span><br><span class="line">	Command <span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="2-GetState"><a href="#2-GetState" class="headerlink" title="2 GetState()"></a>2 GetState()</h3><p>此方法用于检测此主机是否为 leader，并返回 currentTerm。</p>
+<p>加锁的目的是为了防止修改和访问并发的情况，保持一致性。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">GetState</span><span class="params">()</span> <span class="params">(<span class="keyword">int</span>, <span class="keyword">bool</span>)</span></span> &#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">var</span> term <span class="keyword">int</span></span><br><span class="line">	<span class="keyword">var</span> isleader <span class="keyword">bool</span></span><br><span class="line">	<span class="comment">// Your code here (2A).</span></span><br><span class="line">	isleader = <span class="literal">false</span></span><br><span class="line">	rf.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> rf.mu.Unlock()</span><br><span class="line">	term = rf.currentTerm</span><br><span class="line">	<span class="keyword">if</span> rf.state == Leader &#123;</span><br><span class="line">		isleader = <span class="literal">true</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> term, isleader</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-func-Make"><a href="#3-func-Make" class="headerlink" title="3 func Make()"></a>3 func Make()</h3><p>此方法被用来创建一个 Raft 服务器。</p>
+<p>首先对 Raft 的一些状态进行初始化。</p>
+<p>然后开启一个协程执行 <code>rf.ticker()</code>。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Make</span><span class="params">(peers []*labrpc.ClientEnd, me <span class="keyword">int</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">	persister *Persister, applyCh <span class="keyword">chan</span> ApplyMsg)</span> *<span class="title">Raft</span></span> &#123;</span><br><span class="line">	rf := &amp;Raft&#123;&#125;</span><br><span class="line">	rf.peers = peers</span><br><span class="line">	rf.persister = persister</span><br><span class="line">	rf.me = me</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Your initialization code here (2A, 2B, 2C).</span></span><br><span class="line">	rf.currentTerm = <span class="number">0</span></span><br><span class="line">	rf.voteFor = <span class="number">-1</span></span><br><span class="line">	rf.log = <span class="built_in">make</span>([]Log, <span class="number">1</span>)</span><br><span class="line">	rf.state = Follower</span><br><span class="line"></span><br><span class="line">	rf.appendLogCh = <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">bool</span>, <span class="number">1</span>)</span><br><span class="line">	rf.voteCh = <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">bool</span>, <span class="number">1</span>)</span><br><span class="line">	rf.applyCh = applyCh</span><br><span class="line"></span><br><span class="line">	<span class="comment">// initialize from state persisted before a crash</span></span><br><span class="line">	rf.readPersist(persister.ReadRaftState())</span><br><span class="line"></span><br><span class="line">	<span class="comment">// start ticker goroutine to start elections</span></span><br><span class="line">	<span class="keyword">go</span> rf.ticker()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> rf</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-完成-rf-ticker"><a href="#4-完成-rf-ticker" class="headerlink" title="4 完成 rf.ticker()"></a>4 完成 rf.ticker()</h3><p>此协程长期运行。</p>
+<p>根据服务器的状态决定执行哪个操作：</p>
+<ol>
+<li><code>rf.state == Follower or Candidate</code> , 执行：当超过超时时间 <code>electionTimeout</code> 时，还没有收到来自 <code>voteCh</code> 或 <code>appendLogCh</code> 的信号时，开启一个选举。</li>
+<li><code>rf.state == Leader</code>, 执行：向所有 follower 发送心跳并等待 <code>heartsbeatTime</code> 时间。(等待是为了所有 follower 都收到心跳)</li>
+</ol>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// The ticker go routine starts a new election if this peer hasn&#x27;t received</span></span><br><span class="line"><span class="comment">// heartsbeats recently.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">ticker</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">for</span> rf.killed() == <span class="literal">false</span> &#123;</span><br><span class="line">		heartsbeatTime := time.Duration(rand.Intn(<span class="number">100</span>)) * time.Millisecond</span><br><span class="line">		<span class="comment">// Your code here to check if a leader election should</span></span><br><span class="line">		<span class="comment">// be started and to randomize sleeping time using</span></span><br><span class="line">		<span class="comment">// time.Sleep().</span></span><br><span class="line">		electionTimeout := time.Duration(rand.Intn(<span class="number">100</span>)+<span class="number">150</span>) * time.Millisecond</span><br><span class="line">		<span class="comment">// DPrintf(&quot;[%d] electionTimeout is %d&quot;, rf.me, electionTimeout)</span></span><br><span class="line">		<span class="keyword">switch</span> rf.state &#123;</span><br><span class="line">		<span class="keyword">case</span> Follower, Candidate:</span><br><span class="line">			<span class="keyword">select</span> &#123;</span><br><span class="line">			<span class="keyword">case</span> &lt;-rf.voteCh:</span><br><span class="line">				DPrintf(<span class="string">&quot;[%d] receive from voteCh&quot;</span>, rf.me)</span><br><span class="line">			<span class="keyword">case</span> &lt;-rf.appendLogCh:</span><br><span class="line">				DPrintf(<span class="string">&quot;[%d] receive from appendLogCh&quot;</span>, rf.me)</span><br><span class="line">			<span class="keyword">case</span> &lt;-time.After(electionTimeout):</span><br><span class="line">				rf.AttemptElection()</span><br><span class="line">			&#125;</span><br><span class="line">		<span class="keyword">case</span> Leader:</span><br><span class="line">			rf.CallAppendEntries()</span><br><span class="line">			time.Sleep(heartsbeatTime)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-start-a-election"><a href="#5-start-a-election" class="headerlink" title="5 start a election"></a>5 start a election</h3><p>开启选举。</p>
+<ul>
+<li>更改服务器的状态为 Candidate。</li>
+<li>任期加1。</li>
+<li>给自己投票</li>
+<li>向除自己外的所有服务器发送请求投票 RPC，若发送失败，则直接返回。否则，统计获得的票数，如果总票数大于服务器数量的一半，则候选人变成领导人。</li>
+</ul>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">AttemptElection</span><span class="params">()</span></span> &#123;</span><br><span class="line">	DPrintf(<span class="string">&quot;[%d] start an election.., term is %d&quot;</span>, rf.me, rf.currentTerm)</span><br><span class="line">	rf.state = Candidate</span><br><span class="line">	rf.currentTerm++</span><br><span class="line">	rf.voteFor = rf.me</span><br><span class="line"></span><br><span class="line">	term := rf.currentTerm</span><br><span class="line"></span><br><span class="line">	args := RequestVoteArgs&#123;</span><br><span class="line">		Term:        term,</span><br><span class="line">		CandidateID: rf.me,</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">var</span> votes <span class="keyword">int32</span> = <span class="number">1</span></span><br><span class="line">	<span class="keyword">for</span> server := <span class="number">0</span>; server &lt; <span class="built_in">len</span>(rf.peers); server++ &#123;</span><br><span class="line">		<span class="keyword">if</span> server == rf.me &#123;</span><br><span class="line">			<span class="keyword">continue</span></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">(server <span class="keyword">int</span>)</span></span> &#123;</span><br><span class="line">			reply := RequestVoteReply&#123;&#125;</span><br><span class="line">			DPrintf(<span class="string">&quot;[%d] send request vote to [%d]&quot;</span>, rf.me, server)</span><br><span class="line">			voteGranted := rf.sendRequestVote(server, &amp;args, &amp;reply)</span><br><span class="line"></span><br><span class="line">			<span class="keyword">if</span> !voteGranted &#123;</span><br><span class="line">				<span class="keyword">return</span></span><br><span class="line">			&#125;</span><br><span class="line">	</span><br><span class="line">			<span class="keyword">if</span> reply.VoteGranted &#123;</span><br><span class="line">				atomic.AddInt32(&amp;votes, <span class="number">1</span>)</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span> atomic.LoadInt32(&amp;votes) &gt; <span class="keyword">int32</span>(<span class="built_in">len</span>(rf.peers)/<span class="number">2</span>) &#123;</span><br><span class="line">				<span class="keyword">if</span> rf.state != Candidate &#123;</span><br><span class="line">					<span class="keyword">return</span></span><br><span class="line">				&#125;</span><br><span class="line">				rf.state = Leader</span><br><span class="line">				rf.voteCh &lt;- <span class="literal">true</span></span><br><span class="line">			&#125;</span><br><span class="line">		&#125;(server)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p> 一个服务器收到请求投票的 RPC，如果对方的任期不小于本服务器的任期，那就投票给对方。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// example RequestVote RPC handler.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">RequestVote</span><span class="params">(args *RequestVoteArgs, reply *RequestVoteReply)</span></span> &#123;</span><br><span class="line">	<span class="comment">// Your code here (2A, 2B).</span></span><br><span class="line">	reply.VoteGranted = <span class="literal">false</span></span><br><span class="line">	<span class="keyword">if</span> rf.currentTerm &lt;= args.Term &#123;</span><br><span class="line">		rf.voteFor = args.CandidateID</span><br><span class="line">		rf.state = Follower</span><br><span class="line">		reply.Term = rf.currentTerm</span><br><span class="line">		reply.VoteGranted = <span class="literal">true</span></span><br><span class="line">		rf.voteCh &lt;- <span class="literal">true</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// example RequestVote RPC arguments structure.</span></span><br><span class="line"><span class="comment">// field names must start with capital letters!</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="keyword">type</span> RequestVoteArgs <span class="keyword">struct</span> &#123;</span><br><span class="line">	<span class="comment">// Your data here (2A, 2B).</span></span><br><span class="line">	Term         <span class="keyword">int</span> <span class="comment">// candidate’s term</span></span><br><span class="line">	CandidateID  <span class="keyword">int</span> <span class="comment">// candidate requesting vote</span></span><br><span class="line">	LastLogIndex <span class="keyword">int</span> <span class="comment">// index of candidate’s last log entry</span></span><br><span class="line">	LastLogTerm  <span class="keyword">int</span> <span class="comment">// term of candidate’s last log entry</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// example RequestVote RPC reply structure.</span></span><br><span class="line"><span class="comment">// field names must start with capital letters!</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="keyword">type</span> RequestVoteReply <span class="keyword">struct</span> &#123;</span><br><span class="line">	<span class="comment">// Your data here (2A).</span></span><br><span class="line">	Term        <span class="keyword">int</span> <span class="comment">// currentTerm, for candidate to update itself</span></span><br><span class="line">	VoteGranted <span class="keyword">bool</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="BUG-1"><a href="#BUG-1" class="headerlink" title="BUG 1"></a>BUG 1</h3><p>选举成功，成为 Leader 的时候，需要发送给 <code>voteCh</code> 一个信号给循环等待的协程 <code>go rf.ticker()</code>。如果不通知，则 <code>Test (2A): initial election ...</code> 无法通过。</p>
+<p>原因：首先，服务器等待了 <code>electionTimeout</code> 时间，没有收到心跳或者选举成功的信号，所以尝试开启了新一轮选举。开启之后，就进入了下一个等待周期，选举成功之后应该向协程 <code>go rf.ticker()</code>发送一个信号，通知他已经成为了 Leader，不必再等待。否则，将开启下一轮选举，永远无法成功。</p>
+<h3 id="6-HeartBeat"><a href="#6-HeartBeat" class="headerlink" title="6 HeartBeat"></a>6 HeartBeat</h3><p>一个服务器成为 Leader，要定期向它的所有 Follower 发送心跳。</p>
+<p>发送方：</p>
+<p>为每一个 Follower 开启一个协程，以并发来提高效率。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// append log to follower</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">CallAppendEntries</span><span class="params">()</span></span> &#123;</span><br><span class="line">	DPrintf(<span class="string">&quot;[%d] start appending log.., term is %d&quot;</span>, rf.me, rf.currentTerm)</span><br><span class="line">	<span class="keyword">for</span> server := <span class="number">0</span>; server &lt; <span class="built_in">len</span>(rf.peers); server++ &#123;</span><br><span class="line">		<span class="keyword">if</span> server == rf.me &#123;</span><br><span class="line">			<span class="keyword">continue</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">(server <span class="keyword">int</span>)</span></span> &#123;</span><br><span class="line">			args := AppendEntriesArgs&#123;</span><br><span class="line">				Term:     rf.currentTerm,</span><br><span class="line">				LeaderId: rf.me,</span><br><span class="line">			&#125;</span><br><span class="line">			reply := AppendEntriesReply&#123;&#125;</span><br><span class="line">			ok := rf.sendAppendEntries(server, &amp;args, &amp;reply)</span><br><span class="line">			<span class="keyword">if</span> ok &#123;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;(server)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// AppendEntries RPC arguments structure.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="keyword">type</span> AppendEntriesArgs <span class="keyword">struct</span> &#123;</span><br><span class="line">	Term         <span class="keyword">int</span></span><br><span class="line">	LeaderId     <span class="keyword">int</span></span><br><span class="line">	PreLogIndex  <span class="keyword">int</span></span><br><span class="line">	PreLogTerm   <span class="keyword">int</span></span><br><span class="line">	Entries      []Log</span><br><span class="line">	LeaderCommit <span class="keyword">int</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// AppendEntries RPC reply structure.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="keyword">type</span> AppendEntriesReply <span class="keyword">struct</span> &#123;</span><br><span class="line">	Term    <span class="keyword">int</span></span><br><span class="line">	Success <span class="keyword">bool</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>接收方：</p>
+<p>收到心跳的时候，向协程 <code>go ticker()</code> 发送一个信号，通知它。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// RPC</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">AppendEntries</span><span class="params">(args *AppendEntriesArgs, reply *AppendEntriesReply)</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> args.Term &gt; rf.currentTerm &#123;</span><br><span class="line">		rf.state = Follower</span><br><span class="line">		rf.currentTerm = args.Term</span><br><span class="line">		rf.appendLogCh &lt;- <span class="literal">true</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// RPC</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">sendAppendEntries</span><span class="params">(server <span class="keyword">int</span>, args *AppendEntriesArgs, reply *AppendEntriesReply)</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">	ok := rf.peers[server].Call(<span class="string">&quot;Raft.AppendEntries&quot;</span>, args, reply)</span><br><span class="line">	<span class="keyword">return</span> ok</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="7-测试"><a href="#7-测试" class="headerlink" title="7 测试"></a>7 测试</h3><p>执行 <code>go test -run 2A</code>。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Test (<span class="number">2</span>A): initial election ...</span><br><span class="line">warning: term changed even though there were no failures  ... Passed --   <span class="number">3.1</span>  <span class="number">3</span>  <span class="number">180</span>   <span class="number">41578</span>    <span class="number">0</span></span><br><span class="line">Test (<span class="number">2</span>A): election after network failure ...</span><br><span class="line">  ... Passed --   <span class="number">4.5</span>  <span class="number">3</span>  <span class="number">292</span>   <span class="number">55788</span>    <span class="number">0</span></span><br><span class="line">Test (<span class="number">2</span>A): multiple elections ...</span><br><span class="line">  ... Passed --   <span class="number">5.5</span>  <span class="number">7</span> <span class="number">1560</span>  <span class="number">282244</span>    <span class="number">0</span></span><br><span class="line">PASS</span><br><span class="line">ok  	<span class="number">6.824</span>/raft	<span class="number">13.156</span>s</span><br></pre></td></tr></table></figure>
+
+
+      
+    </div>
+    
+    
+    
+    <div>
+      
+        <div>
+    
+        <div style="text-align:center;color: #ccc;font-size:14px;">-------------本文结束<i class="fa fa-paw"></i>感谢您的阅读-------------</div>
+    
+</div>
+      
+    </div>
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2021/03/30/%E8%BF%91%E6%9C%9F%E9%9D%A2%E8%AF%95%E6%80%BB%E7%BB%93/" rel="next" title="近期面试总结">
+                <i class="fa fa-chevron-left"></i> 近期面试总结
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2021/03/30/MIT-6.824%20Part%202D%20log%20compaction%20(hard)/" rel="prev" title="">
+                 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+    <script>
+      window.onload = function(){
+        var valine = new Valine();
+        valine.init({
+          el: '#vcomments',
+          appId: "<%= theme.v_appId %>",
+          appKey: "<%= theme.v_appKey %>",
+          path: window.location.pathname,
+          placeholder: "你是我一生只会遇见一次的惊喜 ...",
+          avatar:'wavatar', //用不同面孔和背景组合生成的头像
+          notify: true, // 邮件提醒!!!
+          verify: true, // 验证码
+          })
+      }
+    </script>
+    </div>
+    
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/uploads/1.jpg"
+                alt="别云" />
+            
+              <p class="site-author-name" itemprop="name">别云</p>
+              <p class="site-description motion-element" itemprop="description">快乐是奢侈品</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">4</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+          <!--
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+          -->
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/evil-must" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:15896677856@163.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+          
+<div id="music163player">
+  <!--网易云插件-->
+    <iframe frameborder="no" border="0" marginwidth="0" marginheight="0" width=330 height=86
+     src="//music.163.com/outchain/player?type=2&id=22803364&auto=0&height=66"></iframe>
+</div>
+
+  <div class="links-of-blogroll motion-element links-of-blogroll-block">
+    <div class="links-of-blogroll-title">
+      <!-- modify icon to fire by szw -->
+      <i class="fa fa-history fa-" aria-hidden="true"></i>
+      近期文章
+    </div>
+    <ul class="links-of-blogroll-list">
+      
+      
+        <li class="recent_posts_li">
+          <a href="/2021/03/30/MIT-6.824%20Part%202D%20log%20compaction%20(hard)/" title="" target="_blank"></a>
+        </li>
+      
+        <li class="recent_posts_li">
+          <a href="/2021/03/30/MIT-6.824%20Part%202A%20leader%20election(moderate)/" title="" target="_blank"></a>
+        </li>
+      
+        <li class="recent_posts_li">
+          <a href="/2021/03/30/%E8%BF%91%E6%9C%9F%E9%9D%A2%E8%AF%95%E6%80%BB%E7%BB%93/" title="近期面试总结" target="_blank">近期面试总结</a>
+        </li>
+      
+        <li class="recent_posts_li">
+          <a href="/2021/03/30/%E6%88%91%E7%9A%84%202020/" title="我的 2020" target="_blank">我的 2020</a>
+        </li>
+      
+        <li class="recent_posts_li">
+          <a href="/2021/02/05/LAB%206%20%E7%BD%91%E7%BB%9C%E9%A9%B1%E5%8A%A8/" title="网络驱动" target="_blank">网络驱动</a>
+        </li>
+      
+    </ul>
+  </div>
+
+
+
+          
+          
+
+          
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#MIT-6-824-Part-2A-leader-election-moderate"><span class="nav-number">1.</span> <span class="nav-text">MIT-6.824 Part 2A: leader election(moderate)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#TASK"><span class="nav-number">1.0.1.</span> <span class="nav-text">TASK</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-Raft-struct"><span class="nav-number">1.0.2.</span> <span class="nav-text">1 Raft struct</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-GetState"><span class="nav-number">1.0.3.</span> <span class="nav-text">2 GetState()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-func-Make"><span class="nav-number">1.0.4.</span> <span class="nav-text">3 func Make()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E5%AE%8C%E6%88%90-rf-ticker"><span class="nav-number">1.0.5.</span> <span class="nav-text">4 完成 rf.ticker()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-start-a-election"><span class="nav-number">1.0.6.</span> <span class="nav-text">5 start a election</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BUG-1"><span class="nav-number">1.0.7.</span> <span class="nav-text">BUG 1</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-HeartBeat"><span class="nav-number">1.0.8.</span> <span class="nav-text">6 HeartBeat</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-%E6%B5%8B%E8%AF%95"><span class="nav-number">1.0.9.</span> <span class="nav-text">7 测试</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+<div class="copyright">&copy; 2020 &mdash; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">别云</span>
+  
+</div>
+只有行云忘不却, 追随着流水奔腾<br>
+<div class="powered-by">
+  <i class="fa fa-user-md"></i><span id="busuanzi_container_site_uv">
+    本站访客数:<span id="busuanzi_value_site_uv"></span>
+  </span>
+</div>
+<!--
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+
+
+-->
+
+<div class="theme-info">
+  <div class="powered-by"></div>
+  <span class="post-count">博客全站共75.8k字</span>
+</div>
+<br>
+<!-- 网站运行时间的设置 -->
+<span id="timeDate">载入天数...</span>
+<span id="times">载入时分秒...</span>
+<script>
+    var now = new Date();
+    function createtime() {
+        var grt= new Date("12/01/2020 13:14:21");//此处修改你的建站时间或者网站上线时间
+        now.setTime(now.getTime()+250);
+        days = (now - grt ) / 1000 / 60 / 60 / 24; dnum = Math.floor(days);
+        hours = (now - grt ) / 1000 / 60 / 60 - (24 * dnum); hnum = Math.floor(hours);
+        if(String(hnum).length ==1 ){hnum = "0" + hnum;} minutes = (now - grt ) / 1000 /60 - (24 * 60 * dnum) - (60 * hnum);
+        mnum = Math.floor(minutes); if(String(mnum).length ==1 ){mnum = "0" + mnum;}
+        seconds = (now - grt ) / 1000 - (24 * 60 * 60 * dnum) - (60 * 60 * hnum) - (60 * mnum);
+        snum = Math.round(seconds); if(String(snum).length ==1 ){snum = "0" + snum;}
+        document.getElementById("timeDate").innerHTML = "本站已安全运行 "+dnum+" 天 ";
+        document.getElementById("times").innerHTML = hnum + " 小时 " + mnum + " 分 " + snum + " 秒";
+    }
+setInterval("createtime()",250);
+</script>
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+  </div>
+  
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/three/three.min.js"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/three/three-waves.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  
+  <script type="text/javascript">
+    var GUEST = ['nick','mail','link'];
+    var guest = 'nick,mail';
+    guest = guest.split(',').filter(item=>{
+      return GUEST.indexOf(item)>-1;
+    });
+    new Valine({
+        el: '#comments' ,
+        verify: true,
+        notify: true,
+        appId: 'y8UDCfGVDHBgEMFSGqOzHUwq-gzGzoHsz',
+        appKey: 'rWYiG4yjCtJ6Hd9eJegMbUgs',
+        placeholder: '没有独立思想的世界没有自由',
+        avatar:'mm',
+        guest_info:guest,
+        pageSize:'10' || 10,
+    });
+  </script>
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+  <script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.4.js"></script>
+  <script>AV.initialize("y8UDCfGVDHBgEMFSGqOzHUwq-gzGzoHsz", "rWYiG4yjCtJ6Hd9eJegMbUgs");</script>
+  <script>
+    function showTime(Counter) {
+      var query = new AV.Query(Counter);
+      var entries = [];
+      var $visitors = $(".leancloud_visitors");
+
+      $visitors.each(function () {
+        entries.push( $(this).attr("id").trim() );
+      });
+
+      query.containedIn('url', entries);
+      query.find()
+        .done(function (results) {
+          var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+          if (results.length === 0) {
+            $visitors.find(COUNT_CONTAINER_REF).text(0);
+            return;
+          }
+
+          for (var i = 0; i < results.length; i++) {
+            var item = results[i];
+            var url = item.get('url');
+            var time = item.get('time');
+            var element = document.getElementById(url);
+
+            $(element).find(COUNT_CONTAINER_REF).text(time);
+          }
+          for(var i = 0; i < entries.length; i++) {
+            var url = entries[i];
+            var element = document.getElementById(url);
+            var countSpan = $(element).find(COUNT_CONTAINER_REF);
+            if( countSpan.text() == '') {
+              countSpan.text(0);
+            }
+          }
+        })
+        .fail(function (object, error) {
+          console.log("Error: " + error.code + " " + error.message);
+        });
+    }
+
+    function addCount(Counter) {
+      var $visitors = $(".leancloud_visitors");
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+      var query = new AV.Query(Counter);
+
+      query.equalTo("url", url);
+      query.find({
+        success: function(results) {
+          if (results.length > 0) {
+            var counter = results[0];
+            counter.fetchWhenSave(true);
+            counter.increment("time");
+            counter.save(null, {
+              success: function(counter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.get('time'));
+              },
+              error: function(counter, error) {
+                console.log('Failed to save Visitor num, with error message: ' + error.message);
+              }
+            });
+          } else {
+            var newcounter = new Counter();
+            /* Set ACL */
+            var acl = new AV.ACL();
+            acl.setPublicReadAccess(true);
+            acl.setPublicWriteAccess(true);
+            newcounter.setACL(acl);
+            /* End Set ACL */
+            newcounter.set("title", title);
+            newcounter.set("url", url);
+            newcounter.set("time", 1);
+            newcounter.save(null, {
+              success: function(newcounter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+              },
+              error: function(newcounter, error) {
+                console.log('Failed to create');
+              }
+            });
+          }
+        },
+        error: function(error) {
+          console.log('Error:' + error.code + " " + error.message);
+        }
+      });
+    }
+
+    $(function() {
+      var Counter = AV.Object.extend("Counter");
+      if ($('.leancloud_visitors').length == 1) {
+        addCount(Counter);
+      } else if ($('.post-title-link').length > 1) {
+        showTime(Counter);
+      }
+    });
+  </script>
+
+
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"/live2dw/assets/hijiki.model.json"},"display":{"position":"left","width":150,"height":300},"mobile":{"show":true}});</script></body>
+</html>
