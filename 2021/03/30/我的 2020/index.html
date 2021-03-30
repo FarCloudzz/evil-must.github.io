@@ -75,7 +75,7 @@
 
 
 
-  <meta name="keywords" content="OS 笔记," />
+  <meta name="keywords" content="Hexo, NexT" />
 
 
 
@@ -88,17 +88,17 @@
 
 
 
-<meta name="description" content="回顾 828 的 Lab3，进程管理部分。 此部分增强 JOS 内核的功能，实现对进程的支持。 进程管理包括创建新进程、初始化、分配页目录、分配以及映射物理内存、加载程序 ELF 二进制映像到用户地址空间 以及 在用户模式运行进程。 除此之外，由于进程常常要调用操作系统提供的接口，所以还实现了对中断和异常的处理，操作系统在内核态和用户态之间进行切换。">
+<meta name="description" content="Here&#39;s something encrypted, password is required to continue reading.">
 <meta property="og:type" content="article">
-<meta property="og:title" content="进程管理">
-<meta property="og:url" content="http://evil-must.github.io/2020/12/23/LAB%203%20%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/index.html">
+<meta property="og:title" content="我的 2020">
+<meta property="og:url" content="http://evil-must.github.io/2021/03/30/%E6%88%91%E7%9A%84%202020/index.html">
 <meta property="og:site_name" content="明日边缘">
-<meta property="og:description" content="回顾 828 的 Lab3，进程管理部分。 此部分增强 JOS 内核的功能，实现对进程的支持。 进程管理包括创建新进程、初始化、分配页目录、分配以及映射物理内存、加载程序 ELF 二进制映像到用户地址空间 以及 在用户模式运行进程。 除此之外，由于进程常常要调用操作系统提供的接口，所以还实现了对中断和异常的处理，操作系统在内核态和用户态之间进行切换。">
+<meta property="og:description" content="Here&#39;s something encrypted, password is required to continue reading.">
 <meta property="og:locale">
-<meta property="article:published_time" content="2020-12-23T14:47:00.000Z">
-<meta property="article:modified_time" content="2020-12-25T03:23:35.954Z">
+<meta property="article:published_time" content="2021-03-30T02:00:12.000Z">
+<meta property="article:modified_time" content="2021-03-30T03:44:39.681Z">
 <meta property="article:author" content="别云">
-<meta property="article:tag" content="OS 笔记">
+<meta property="article:tag" content="code, game">
 <meta name="twitter:card" content="summary">
 
 
@@ -129,13 +129,13 @@
 
 
 
-  <link rel="canonical" href="http://evil-must.github.io/2020/12/23/LAB 3 进程管理/"/>
+  <link rel="canonical" href="http://evil-must.github.io/2021/03/30/我的 2020/"/>
 
 
 
 
 
-  <title>进程管理 | 明日边缘</title>
+  <title>我的 2020 | 明日边缘</title>
   
 
 
@@ -316,7 +316,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://evil-must.github.io/2020/12/23/LAB%203%20%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/">
+    <link itemprop="mainEntityOfPage" href="http://evil-must.github.io/2021/03/30/%E6%88%91%E7%9A%84%202020/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="别云">
@@ -333,7 +333,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">进程管理</h1>
+          <h1 class="post-title" itemprop="name headline">我的 2020</h1>
         
 
         <div class="post-meta">
@@ -345,8 +345,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-12-23T22:47:00+08:00">
-                2020-12-23
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2021-03-30T10:00:12+08:00">
+                2021-03-30
               </time>
             
 
@@ -368,8 +368,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index">
-                    <span itemprop="name">操作系统</span>
+                  <a href="/categories/%E6%9D%82%E6%96%87/" itemprop="url" rel="index">
+                    <span itemprop="name">杂文</span>
                   </a>
                 </span>
 
@@ -386,8 +386,8 @@
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2020/12/23/LAB%203%20%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count valine-comment-count" data-xid="/2020/12/23/LAB%203%20%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" itemprop="commentCount"></span>
+                <a href="/2021/03/30/%E6%88%91%E7%9A%84%202020/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2021/03/30/%E6%88%91%E7%9A%84%202020/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -395,7 +395,7 @@
 
           
           
-             <span id="/2020/12/23/LAB%203%20%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" class="leancloud_visitors" data-flag-title="进程管理">
+             <span id="/2021/03/30/%E6%88%91%E7%9A%84%202020/" class="leancloud_visitors" data-flag-title="我的 2020">
                <span class="post-meta-divider">|</span>
                <span class="post-meta-item-icon">
                  <i class="fa fa-eye"></i>
@@ -421,7 +421,7 @@
                   <span class="post-meta-item-text">字数统计&#58;</span>
                 
                 <span title="字数统计">
-                  1.6k 字
+                  9 字
                 </span>
               
 
@@ -437,7 +437,7 @@
                   <span class="post-meta-item-text">阅读时长 &asymp;</span>
                 
                 <span title="阅读时长">
-                  6 分钟
+                  1 分钟
                 </span>
               
             </div>
@@ -458,66 +458,18 @@
       
 
       
-        <p>回顾 828 的 Lab3，进程管理部分。</p>
-<p>此部分增强 JOS 内核的功能，实现对进程的支持。</p>
-<p>进程管理包括创建新进程、初始化、分配页目录、分配以及映射物理内存、加载程序 ELF 二进制映像到用户地址空间 以及 在用户模式运行进程。</p>
-<p>除此之外，由于进程常常要调用操作系统提供的接口，所以还实现了对中断和异常的处理，操作系统在内核态和用户态之间进行切换。</p>
-<a id="more"></a>
-
-
-
-<p>此实验主要内容：</p>
-<h2 id="1、接上篇，内存初始化完毕之后，进行进程初始化"><a href="#1、接上篇，内存初始化完毕之后，进行进程初始化" class="headerlink" title="1、接上篇，内存初始化完毕之后，进行进程初始化"></a>1、接上篇，内存初始化完毕之后，进行进程初始化</h2><p>实现创建和运行进程所需的函数：</p>
-<blockquote>
-<ul>
-<li>env_init()： 初始化 envs 数组中的所有 Env 结构，并将它们添加到env_free_list 中。调用 <code>env_init_percpu</code>，它将分区硬件配置为权限级别为 0 (kernal)和权限级别为 3 (user)的单独段。</li>
-<li>env_setup_vm():  为新环境分配一个页目录，并初始化新环境的地址空间的内核部分。</li>
-<li>region_alloc() ：为环境分配和映射物理内存。</li>
-<li>load_icode()： 您将需要解析 ELF 二进制映像，就像引导加载程序已经做的那样，并将其内容加载到新环境的用户地址空间中。</li>
-<li>env_create()：使用 <code>env_alloc</code> 分配环境，并调用 <code>load_icode</code> 将 ELF 二进制文件加载到其中。</li>
-<li>env_run()： 启动一个以用户模式运行的给定环境。</li>
-</ul>
-</blockquote>
-<p>以上功能实现对用户进程的支持，但当用户进程使用 <code>int $0x30</code> 指令进行系统调用时，会出现错误（int 是将字符显示到控制台的系统调用）。</p>
-<p>这是因为还没有实现 CPU 对系统调用的中断处理。</p>
-<h2 id="2、异常处理"><a href="#2、异常处理" class="headerlink" title="2、异常处理"></a>2、异常处理</h2><blockquote>
-<p> 异常和中断都是”受保护的控制传输”，导致处理器从用户切换到内核模式 （CPL = 0），而不会给用户模式代码任何干扰内核或其他环境功能的机会。</p>
-</blockquote>
-<p>在 x86 上，两个机制协同工作以提供此保护：</p>
-<ol>
-<li><p>The Interrupt Descriptor Table</p>
-<p>CPU 使用向量作为处理器中断描述符表 （IDT） 的索引，内核在内核专用内存中设置该表，与 GDT 很像。从此表中的合适条目中，处理器加载：</p>
-<ul>
-<li>要加载到指令指针 （EIP） 寄存器中的值，指向用于处理该类型的异常的内核代码。</li>
-<li>要加载到代码段 （CS） 寄存器中的值，其中包括在位 0-1 中运行异常处理程序的权限级别。（在 JOS 中，所有异常都在内核模式下处理，权限级别 0）</li>
-</ul>
-</li>
-<li><p>The Task State Segment</p>
-<p>简而言之，JOS 使用 TSS 来保存处理器从用户模式切换到内核模式时的处理器状态。比如：EIP、CS 寄存器的值。</p>
-<p>以便异常处理程序结束后，从中断的位置恢复处理器的状态。</p>
-</li>
-</ol>
-<p>JOS 将中断向量 48 (0x30) 作为系统调用中断向量。</p>
-<h2 id="3、设置-IDT"><a href="#3、设置-IDT" class="headerlink" title="3、设置 IDT"></a>3、设置 IDT</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span></span><br><span class="line">i386_init(<span class="keyword">void</span>)</span><br><span class="line">&#123;</span><br><span class="line">    ...</span><br><span class="line">    env_init();</span><br><span class="line">    trap_init(); <span class="comment">// 初始化 IDT</span></span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 设置 IDT，并把 TSS 和 IDT 加载到 CPU 特定位置。</span></span><br><span class="line">kern/trap.c/trap_init()</span><br><span class="line">    --&gt; SETGATE(idt[T_FPERR], <span class="number">0</span>, GD_KT, V_FPERR, <span class="number">0</span>)</span><br><span class="line">		...</span><br><span class="line">    --&gt; trap_init_percpu() <span class="comment">// Initialize and load the per-CPU TSS and IDT</span></span><br><span class="line">		--&gt; Setup a TSS</span><br><span class="line">    	--&gt; Initialize the TSS slot of the gdt.</span><br><span class="line">    	--&gt; ltr(GD_TSS0)   <span class="comment">// Load the TSS selector</span></span><br><span class="line">    	--&gt; lidt(&amp;idt_pd)  <span class="comment">// Load the IDT</span></span><br></pre></td></tr></table></figure>
-
-
-
-<h2 id="4、创建一个进程："><a href="#4、创建一个进程：" class="headerlink" title="4、创建一个进程："></a>4、创建一个进程：</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// hello, world</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;inc/lib.h&gt;</span></span></span><br><span class="line"><span class="keyword">void</span></span><br><span class="line">umain(<span class="keyword">int</span> argc, <span class="keyword">char</span> **argv)</span><br><span class="line">&#123;</span><br><span class="line">	cprintf(<span class="string">&quot;hello, world\n&quot;</span>);</span><br><span class="line">	cprintf(<span class="string">&quot;i am environment %08x\n&quot;</span>, thisenv-&gt;env_id);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>编译时，<code>hello.c</code> 被编译为 ELF 二进制可执行映像嵌入到内存中，以便内核运行。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 内核态下</span></span><br><span class="line">--&gt; ENV_CREATE(user_hello, ENV_TYPE_USER) <span class="comment">// 内核态下，创建进程，然后切换到用户态执行进程</span></span><br><span class="line">    --&gt; ENV_PASTE3(_binary_obj_, user_hello, _start)[] <span class="comment">// 生成二进制程序的名，以便使用</span></span><br><span class="line">	--&gt; env_create(_binary_obj_user_hello_start, ENV_TYPE_USER) <span class="comment">// 包含两个函数</span></span><br><span class="line">		--&gt; env_alloc(&amp;e, <span class="number">0</span>) <span class="comment">// 分配并且初始化一个进程，设置各种属性</span></span><br><span class="line">    		--&gt; env_setup_vm(e) <span class="comment">// 为进程分配并设置虚拟页表</span></span><br><span class="line">		--&gt; load_icode(e, binary) <span class="comment">// 加载进程的二进制程序段</span></span><br><span class="line">--&gt; env_run(&amp;envs[<span class="number">0</span>])  <span class="comment">// 运行进程，如果有正在运行的进程，还需要进行上下文的切换</span></span><br><span class="line">    --&gt; lcr3(PADDR(e-&gt;env_pgdir)) <span class="comment">// 加载进程页表基址对应的物理地址，以便进行地址转换和内存访问</span></span><br><span class="line">	--&gt; env_pop_tf(&amp;e-&gt;env_tf) <span class="comment">// (内联汇编)  把&amp;env_tf为起始地址的一段空间&#x27;当成栈&#x27;，逐步popa、pop、iret到相应寄存器。且iret结束后进入&#x27;user mode&#x27;</span></span><br><span class="line">    	--&gt; iret <span class="comment">// 返回用户模式</span></span><br><span class="line">    </span><br><span class="line"><span class="comment">// env_pop_tf 是进入用户模式之前的最后一个函数，iret 指令之后进入用户模式。</span></span><br><span class="line"><span class="comment">// 执行 lib/entry.S 中 start 标签处的 cmpl 指令。</span></span><br><span class="line"><span class="comment">// 用户态下  </span></span><br><span class="line">--&gt; 此时 eip = env_tf.tf_eip = <span class="number">0x80020</span>, 即 lib/extry.S/_start, 之后 call libmain。</span><br><span class="line">--&gt; start executing some environment<span class="number">&#x27;</span>s code</span><br><span class="line">--&gt; libmain(<span class="keyword">int</span> argc, <span class="keyword">char</span> **argv)</span><br><span class="line">    --&gt; thisenv = &amp;envs[ENVX(sys_getenvid())] <span class="comment">//set thisenv to point env structure</span></span><br><span class="line">    	--&gt; lib/sys_getenvid() <span class="comment">// 系统调用</span></span><br><span class="line">    	--&gt; lib/syscall(SYS_getenvid, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>) <span class="comment">// 陷入内核态</span></span><br><span class="line">    		<span class="comment">// 向寄存器中推送值</span></span><br><span class="line">    	--&gt; TRAPHANDLER_NOEC(V_SYSCALL, T_SYSCALL) <span class="comment">// jmp _alltraps and call trap</span></span><br><span class="line">    	--&gt; trap(tf)</span><br><span class="line">    		--&gt; trap_dispatch(tf) <span class="comment">// Dispatch based on what type of trap occurred</span></span><br><span class="line">    			<span class="comment">// 系统调用</span></span><br><span class="line">    			--&gt; kern/syscall()     <span class="comment">// since tf-&gt;tf_trapno == T_SYSCALL</span></span><br><span class="line">    			--&gt; sys_getenvid()	   <span class="comment">// since syscallno == SYS_getenvid and</span></span><br><span class="line">    								   <span class="comment">// return curenv-&gt;env_id to tf-&gt;tf_regs.reg_eax</span></span><br><span class="line">    		--&gt; env_run(curenv)</span><br><span class="line">    			--&gt; lcr3(PADDR(e-&gt;env_pgdir))</span><br><span class="line">    			--&gt; env_pop_tf(&amp;e-&gt;env_tf) <span class="comment">// (内联汇编) 恢复寄存器的值</span></span><br><span class="line">					--&gt; iret <span class="comment">// 返回用户模式， thisenv </span></span><br><span class="line">    --&gt; umain(argc, argv) <span class="comment">// 执行程序代码</span></span><br><span class="line">    	--&gt; user/hello.c/umain()</span><br><span class="line">        --&gt; cprintf(<span class="string">&quot;hello, world\n&quot;</span>)   <span class="comment">// kern/printf.c/cprintf()</span></span><br><span class="line">			--&gt; vcprintf()              <span class="comment">// kern/printf.c/cprintf()</span></span><br><span class="line">                --&gt; vprintfmt((<span class="keyword">void</span>*)putch, &amp;cnt, fmt, ap) <span class="comment">//lib/printfmt.c</span></span><br><span class="line">                	--&gt; punch()         <span class="comment">// kern/printf.c/punch()</span></span><br><span class="line">                		--&gt; cputchar(c)	<span class="comment">// kern/console.c</span></span><br><span class="line">                			--&gt; cons_putc(c) <span class="comment">// kern/console.c  </span></span><br><span class="line">    						<span class="comment">// output a character to the console</span></span><br><span class="line">                                --&gt; serial_putc(c); </span><br><span class="line">                                --&gt; lpt_putc(c);</span><br><span class="line">                                --&gt; cga_putc(c);</span><br><span class="line">					--&gt; 输出</span><br><span class="line">		--&gt; cprintf(<span class="string">&quot;i am environment %08x\n&quot;</span>, thisenv-&gt;env_id); <span class="comment">// 同上	</span></span><br><span class="line">    --&gt; <span class="built_in">exit</span>()  <span class="comment">// lib/exit.c</span></span><br><span class="line">    	--&gt; lib/sys_env_destroy(<span class="number">0</span>)</span><br><span class="line">			--&gt; lib/syscall(SYS_env_destroy, <span class="number">1</span>, envid, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>) <span class="comment">// 系统调用</span></span><br><span class="line">                --&gt; <span class="string">&quot;i&quot;</span> (T_SYSCALL) <span class="comment">// 推送值到寄存器</span></span><br><span class="line">                	--&gt; TRAPHANDLER_NOEC(V_SYSCALL, T_SYSCALL) <span class="comment">// 陷入到内核态</span></span><br><span class="line">        		 <span class="comment">// kern/..</span></span><br><span class="line">                --&gt; trap(tf) </span><br><span class="line">                	--&gt; trap_dispatch(tf) <span class="comment">// Dispatch based on what type of trap occurred</span></span><br><span class="line">        				<span class="comment">// since tf-&gt;tf_trapno == T_SYSCALL</span></span><br><span class="line">                		--&gt; syscall() <span class="comment">// 内核态</span></span><br><span class="line">        				<span class="comment">// since syscallno == SYS_env_destroy</span></span><br><span class="line">                		--&gt; sys_env_destroy(a1)</span><br><span class="line">        					--&gt; env_destroy(e)</span><br><span class="line">        						--&gt; env_free(e)</span><br><span class="line">        						--&gt; monitor(<span class="literal">NULL</span>)</span><br><span class="line">--&gt; <span class="keyword">while</span> (<span class="number">1</span>) monitor(<span class="literal">NULL</span>)</span><br></pre></td></tr></table></figure>
-
-
-
-<blockquote>
-<ol>
-<li><code>lib/syscall</code> 在用户态下调用系统调用，<code>kern/syscall</code>  则是在内核态下。</li>
-<li><code>CR2</code> 控制寄存器存储导致错误的 <code>linear/virtual address</code>。</li>
-<li>A user program 开始运行在 <code>lib/entry.S</code> 的顶部。</li>
-<li>进入用户态后，执行的第一条指令从<code>CS：EIP</code>去找，找到是<code>lib/entry.S/_start</code>，_start里调用了libmain()。</li>
-</ol>
-</blockquote>
-
+        <div class="hbe hbe-container" id="hexo-blog-encrypt" data-wpm="Oh, this is an invalid password. Check and try again, please." data-whm="OOPS, these decrypted content may changed, but you can still have a look.">
+  <script id="hbeData" type="hbeData" data-hmacdigest="d043079214bd7e3b1f7460e917b124a4a1fb1beda17652dce576aba1e4895aa1">21bc6264c5bc87f2ff45a3c32ec678dda89ce6cb9035041d1b5955cafa8eed2a026dfc14b910777b10686e4285d27ba75d254d14109ad8fbf09a33fd83c67c68298e34bcd4482ebade0da706e04db76ffe10a47f427b74c4e8a975bf603cc428b05b263288c9fa3e02f9282064556799fca3c67f9ae2d5787a26baea95bbd7e15f0525570a41eb75d4913e081e0e83b875e4bdb3dbe1bb583d1274dc5b17a852032862daa33a3b2c093de867869d94f140b9e8fbbf9839856d98ec5e84f1e971c69908a0188ba669d6933441a8eca15618ddc8b3d8c9e6731e60aa0322ca85ded7e55c8631897aad2f8fb1d480516ce52516a23c4280f34eb80b62613e961fce7c82757d0af31b08c112106ae794e89e1c084beb02aada36eb0be0941d29be928efb84a2bd7292152e2d792a955839fd3225db850b435de2447fdc131739ae804893475d28266c463b19ecf2549407beead8e899e255ee58fd7f6db4243579ef3e6b0f937e4cc7fa4e235c51871fb7a98c695c832a82cbc0fa4c49754cb34080432641d0f49d078d7c5e1e55de3a0da9bbc6044b7c63f80533e5d73fd4a6b8f31d1926535024df96af5f805e04388cecf29cbd656be8d0464d12dda67fb05ab6944d26aa5865badfda6d84cfa3c3f8b39ec8af9b3659339bc96a8a033d9c388ad54f6e1646d44e47b867bd4ea46c38dec7a72481f9775c7bc358f118c4443f7d78e7aef079cd3423a3aa1f48c62e4ae13ef8e692fe9e29b2298d92f662137a31dde71ca69f546f682ea8b90d2a0d0e120111d4f68816e5d118abe5e2956eed2786e8d362d1991f55186b1910ae54c66eea6497b8f99bc778210d910835156027db82f1b4c420354d8ae6b595a319973558dc77e17871652728518aa54aebb040f01cb28000af90561b9ed1720eae930e2c4fbb3db6cd2ac09234753892a61d5a27257216626f98c9c521ae011132eb1169d92b90d00231f21d8d498fb72206983ad359fe0686e8e2f95365d917aec6b2af9c8c12e11b429392cb1091cb31aa0f81cd36b2609cee5b3adfd65da66166772964776ef165a55026cacf0d145841060ed07e534435573dafab1aecdd9067ec8133a42ca73f51daa0ac18825c592d92ed10850e87b6e4675b5e0e8b6eaab2ff0dda9673919409635aac0795c0771ab5bc264f7ea87c77eec63a2313a337592580ab3dd5825cfd54d35ae78070bfafb2d4b7ddbf359ffe9f38ddf5c339f6d270eaef6b97dff8bfd119e504ee92b74f72be984e5fddbf86fbc9394cc6a72a6e25385ecf926986f6f084157b7b3c7c06ac42cf3f3d6c2894031a1603cc06ebd91c850607351155fdc2145a3cbb372c9e8d155fe3c8f4d1cecd4afbc07266a3a1acc63c54266aa507d05c8190483ae79689201716fc82ba2baf505d7501cd558496d9cf4c28107e84a5af3fee46a9fc1ab88c83fe025bee9fb8d0676caf39c3dccff5dd69a4ec384fba8b7d0fe54e388e4e26bf453da0a44807922c1b3726b21a797abdded52bce65fe80a2436ef15a8bc6af78b7baf8db6b6a9d5bb6eeeb4e2fc1680777680bc24a8cca2114dde1a6e4b84dee3c89005216a055e450b2d55bc038d50b638577c62ddb4a886780af60bf383a57691b056a597e33b5d4950c671dd1eeb63400dbe460a720546d4be8b928251190bb140ad4784a93af43a5c123c8ecf97509058942be4c6e9cc15810e4eb53c6b213344fea02aaeb4d0404dbd5e7d3d9eb400267b34bef9db2a260b8a6d41187d5e8ef06cf898a5a1b8679946f0cb8a862cba483a419507af5534df08e4a2e0f8248c866eea3f1032395e47683ded55765bc20643e6ba83750c729d1b390e6241a85309cb5f3c2d76f800a2ba0c5bdf3107c145ad11a3e7e12b7a7ed218380caee52b89484c0fbba8ab1a294b6bcdc5f0ff0b6df546b921013b7e667ee3021b8b7a97f49b414ee5cdabc83d9ec6d6962471c1bb4f0447c9310d7f17fadfa83c027bfefb6e59232144710c93b536f96</script>
+  <div class="hbe hbe-content">
+    <div class="hbe hbe-input hbe-input-default">
+      <input class="hbe hbe-input-field hbe-input-field-default" type="password" id="hbePass">
+      <label class="hbe hbe-input-label hbe-input-label-default" for="hbePass">
+        <span class="hbe hbe-input-label-content hbe-input-label-content-default">输入密码，查看文章</span>
+      </label>
+    </div>
+  </div>
+</div>
+<script data-pjax src="/lib/hbe.js"></script><link href="/css/hbe.style.css" rel="stylesheet" type="text/css">
       
     </div>
     
@@ -541,12 +493,6 @@
 
     <footer class="post-footer">
       
-        <div class="post-tags">
-          
-            <a href="/tags/OS-%E7%AC%94%E8%AE%B0/" rel="tag"># OS 笔记</a>
-          
-        </div>
-      
 
       
       
@@ -556,8 +502,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2020/12/12/%E5%80%9A%E5%A4%A9%E5%B1%A0%E9%BE%99%E8%AE%B0/" rel="next" title="宿命的审判">
-                <i class="fa fa-chevron-left"></i> 宿命的审判
+              <a href="/2021/02/05/LAB%206%20%E7%BD%91%E7%BB%9C%E9%A9%B1%E5%8A%A8/" rel="next" title="网络驱动">
+                <i class="fa fa-chevron-left"></i> 网络驱动
               </a>
             
           </div>
@@ -566,8 +512,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2020/12/24/LAB%204%20%E5%A4%9A%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6/" rel="prev" title="多任务调度">
-                多任务调度 <i class="fa fa-chevron-right"></i>
+              <a href="/2021/03/30/%E8%BF%91%E6%9C%9F%E9%9D%A2%E8%AF%95%E6%80%BB%E7%BB%93/" rel="prev" title="近期面试总结">
+                近期面试总结 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -638,17 +584,8 @@
       
 
       
-        <ul class="sidebar-nav motion-element">
-          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
-            文章目录
-          </li>
-          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
-            站点概览
-          </li>
-        </ul>
-      
 
-      <section class="site-overview-wrap sidebar-panel">
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -773,22 +710,6 @@
         </div>
       </section>
 
-      
-      <!--noindex-->
-        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
-          <div class="post-toc">
-
-            
-              
-            
-
-            
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1%E3%80%81%E6%8E%A5%E4%B8%8A%E7%AF%87%EF%BC%8C%E5%86%85%E5%AD%98%E5%88%9D%E5%A7%8B%E5%8C%96%E5%AE%8C%E6%AF%95%E4%B9%8B%E5%90%8E%EF%BC%8C%E8%BF%9B%E8%A1%8C%E8%BF%9B%E7%A8%8B%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="nav-text">1、接上篇，内存初始化完毕之后，进行进程初始化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2%E3%80%81%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86"><span class="nav-text">2、异常处理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3%E3%80%81%E8%AE%BE%E7%BD%AE-IDT"><span class="nav-text">3、设置 IDT</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4%E3%80%81%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA%E8%BF%9B%E7%A8%8B%EF%BC%9A"><span class="nav-text">4、创建一个进程：</span></a></li></ol></div>
-            
-
-          </div>
-        </section>
-      <!--/noindex-->
       
 
       
